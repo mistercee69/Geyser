@@ -418,6 +418,18 @@ public class GeyserSession implements CommandSender {
         }
     }
 
+    public boolean isOnline() {
+        return connector.getAuthType() == AuthType.ONLINE;
+    }
+
+    public boolean isOffline() {
+        return connector.getAuthType() == AuthType.OFFLINE;
+    }
+
+    public boolean isFloodgate() {
+        return connector.getAuthType() == AuthType.FLOODGATE || playerEntity.getUuid().getMostSignificantBits() == 0;
+    }
+
     public void authenticate(String username) {
         authenticate(username, "");
     }
@@ -549,8 +561,8 @@ public class GeyserSession implements CommandSender {
                                 playerEntity.setUuid(profile.getId());
 
                                 // Check if they are not using a linked account
-                                if (connector.getAuthType() == AuthType.OFFLINE || playerEntity.getUuid().getMostSignificantBits() == 0) {
-                                    SkinManager.handleBedrockSkin(playerEntity, clientData);
+                                if (isOffline() || isFloodgate()) {
+                                    SkinManager.registerBedrockSkin(playerEntity, clientData);
                                 }
                             }
 

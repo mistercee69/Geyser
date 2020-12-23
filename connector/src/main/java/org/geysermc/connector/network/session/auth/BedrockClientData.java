@@ -31,6 +31,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import org.geysermc.floodgate.util.DeviceOS;
 
+import java.util.List;
 import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -48,11 +49,13 @@ public class BedrockClientData {
     @JsonProperty(value = "SkinId")
     private String skinId;
     @JsonProperty(value = "SkinData")
-    private String skinData;
+    private byte[] skinData;
     @JsonProperty(value = "SkinImageHeight")
     private int skinImageHeight;
     @JsonProperty(value = "SkinImageWidth")
     private int skinImageWidth;
+    @JsonProperty(value = "AnimatedImageData")
+    private List<SkinAnimation> animations;
     @JsonProperty(value = "CapeId")
     private String capeId;
     @JsonProperty(value = "CapeData")
@@ -71,6 +74,16 @@ public class BedrockClientData {
     private boolean personaSkin;
     @JsonProperty(value = "PremiumSkin")
     private boolean premiumSkin;
+    @JsonProperty(value = "ArmSize")
+    private String armSize;
+    @JsonProperty(value = "SkinAnimationData")
+    private String skinAnimationData;
+    @JsonProperty(value = "SkinColor")
+    private String skinColor;
+    @JsonProperty(value = "PersonaPieces")
+    private List<PersonaSkinPiece> personaSkinPieces;
+    @JsonProperty(value = "PieceTintColors")
+    private List<PersonaSkinPieceTintColor> personaTintColors;
 
     @JsonProperty(value = "DeviceId")
     private String deviceId;
@@ -95,14 +108,51 @@ public class BedrockClientData {
     @JsonProperty(value = "ClientRandomId")
     private long clientRandomId;
 
-    @JsonProperty(value = "ArmSize")
-    private String armSize;
-    @JsonProperty(value = "SkinAnimationData")
-    private String skinAnimationData;
-    @JsonProperty(value = "SkinColor")
-    private String skinColor;
+
     @JsonProperty(value = "ThirdPartyNameOnly")
     private boolean thirdPartyNameOnly;
+
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @Getter
+    public static class SkinAnimation {
+        @JsonProperty(value = "Image")
+        private byte[] imageData;
+        @JsonProperty(value = "ImageHeight")
+        private int imageHeight;
+        @JsonProperty(value = "ImageWidth")
+        private int imageWidth;
+        @JsonProperty(value = "Type")
+        private TextureType textureType;
+        @JsonProperty(value = "Frames")
+        private float frames;
+        @JsonProperty(value = "AnimationExpression")
+        private ExpressionType expressionType;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @Getter
+    public static class PersonaSkinPiece {
+        @JsonProperty(value = "PieceId")
+        private String id;
+        @JsonProperty(value = "PieceType")
+        private String type;
+        @JsonProperty(value = "PackId")
+        private String packId;
+        @JsonProperty(value = "IsDefault")
+        private boolean isDefault;
+        @JsonProperty(value = "ProductId")
+        private String productId;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @Getter
+    public static class PersonaSkinPieceTintColor {
+        @JsonProperty(value = "PieceType")
+        private String type;
+        @JsonProperty(value = "Colors")
+        private List<String> colors;
+    }
 
     public enum UIProfile {
         @JsonEnumDefaultValue
@@ -117,5 +167,19 @@ public class BedrockClientData {
         TOUCH, // I guess Touch?
         CONTROLLER,
         VR
+    }
+
+    public enum TextureType {
+        @JsonEnumDefaultValue
+        NONE,
+        FACE,
+        BODY_32X32,
+        BODY_128X128
+    }
+
+    public enum ExpressionType {
+        @JsonEnumDefaultValue
+        LINEAR,
+        BLINKING
     }
 }

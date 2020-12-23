@@ -50,9 +50,9 @@ import org.geysermc.connector.entity.attribute.AttributeType;
 import org.geysermc.connector.entity.living.animal.tameable.ParrotEntity;
 import org.geysermc.connector.entity.type.EntityType;
 import org.geysermc.connector.network.session.GeyserSession;
+import org.geysermc.connector.network.translators.chat.MessageTranslator;
 import org.geysermc.connector.scoreboard.Team;
 import org.geysermc.connector.utils.AttributeUtils;
-import org.geysermc.connector.network.translators.chat.MessageTranslator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -79,9 +79,13 @@ public class PlayerEntity extends LivingEntity {
     public PlayerEntity(GameProfile gameProfile, long entityId, long geyserId, Vector3f position, Vector3f motion, Vector3f rotation) {
         super(entityId, geyserId, EntityType.PLAYER, position, motion, rotation);
 
-        profile = gameProfile;
-        uuid = gameProfile.getId();
-        username = gameProfile.getName();
+        setProfile(profile);
+    }
+
+    public void setProfile(GameProfile gameProfile) {
+        this.profile = gameProfile;
+        uuid = profile.getId();
+        username = profile.getName();
     }
 
     @Override

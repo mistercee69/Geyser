@@ -34,6 +34,7 @@ import com.github.steveice10.opennbt.tag.builtin.Tag;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.geysermc.connector.GeyserConnector;
@@ -55,6 +56,8 @@ import java.util.List;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.geysermc.connector.network.session.auth.BedrockClientData.*;
+
 public class SkinProvider {
     public static final boolean ALLOW_THIRD_PARTY_CAPES = GeyserConnector.getInstance().getConfig().isAllowThirdPartyCapes();
     private static final ExecutorService EXECUTOR_SERVICE = Executors.newFixedThreadPool(ALLOW_THIRD_PARTY_CAPES ? 21 : 14);
@@ -73,14 +76,14 @@ public class SkinProvider {
 
     private static final Map<String, CompletableFuture<Skin>> requestedSkins = new ConcurrentHashMap<>();
 
-    public static final Cape EMPTY_CAPE = new Cape("", "no-cape", new byte[0], -1, true);
+    public static final Cape EMPTY_CAPE = new Cape("", "no-cape", new byte[0], 0, 0, -1, true);
     private static final Cache<String, Cape> cachedCapes = CacheBuilder.newBuilder()
             .expireAfterAccess(1, TimeUnit.HOURS)
             .build();
     private static final Map<String, CompletableFuture<Cape>> requestedCapes = new ConcurrentHashMap<>();
 
     public static final SkinGeometry EMPTY_GEOMETRY = SkinProvider.SkinGeometry.getLegacy(false);
-    private static final Map<UUID, SkinGeometry> cachedGeometry = new ConcurrentHashMap<>();
+    private static final Map<String, SkinGeometry> cachedGeometry = new ConcurrentHashMap<>();
 
     public static final boolean ALLOW_THIRD_PARTY_EARS = GeyserConnector.getInstance().getConfig().isAllowThirdPartyEars();
     public static String EARS_GEOMETRY;
@@ -130,12 +133,17 @@ public class SkinProvider {
     }
 
     public static Skin getCachedSkin(String skinUrl) {
-        return permanentSkins.getOrDefault(skinUrl, cachedSkins.getIfPresent(skinUrl));
+        Skin skin = permanentSkins.getOrDefault(skinUrl, cachedSkins.getIfPresent(skinUrl));
+        return skin != null ? skin : EMPTY_SKIN;
     }
 
     public static Cape getCachedCape(String capeUrl) {
         Cape cape = capeUrl != null ? cachedCapes.getIfPresent(capeUrl) : EMPTY_CAPE;
         return cape != null ? cape : EMPTY_CAPE;
+    }
+
+    public static SkinGeometry getCachedSkinGeometry(UUID playerId) {
+        return playerId != null ? cachedGeometry.getOrDefault(playerId, SkinGeometry.getLegacy(false)) : SkinGeometry.getLegacy(false);
     }
 
     public static CompletableFuture<SkinAndCape> requestSkinAndCape(UUID playerId, String skinUrl, String capeUrl) {
@@ -275,23 +283,27 @@ public class SkinProvider {
     }
 
     public static CompletableFuture<SkinGeometry> requestBedrockGeometry(SkinGeometry currentGeometry, UUID playerID) {
-        SkinGeometry bedrockGeometry = cachedGeometry.getOrDefault(playerID, currentGeometry);
+        SkinGeometry bedrockGeometry = cachedGeometry.getOrDefault(playerID.toString(), currentGeometry);
         return CompletableFuture.completedFuture(bedrockGeometry);
     }
 
-    public static void storeBedrockSkin(UUID playerID, String skinID, byte[] skinData) {
-        Skin skin = new Skin(playerID, skinID, skinData, System.currentTimeMillis(), true, false);
+    public static String storeBedrockSkin(Skin skin) {
+        skin.updated = true;
+        skin.requestedOn = System.currentTimeMillis();
         cachedSkins.put(skin.getTextureUrl(), skin);
+        return skin.getTextureUrl();
     }
 
-    public static void storeBedrockCape(UUID playerID, byte[] capeData) {
-        Cape cape = new Cape(playerID.toString() + ".Bedrock", playerID.toString(), capeData, System.currentTimeMillis(), false);
+    public static String storeBedrockCape(UUID playerID, byte[] capeData, int capeWidth, int capeHeight) {
+        Cape cape = new Cape(playerID.toString() + ".Bedrock", playerID.toString(), capeData, capeWidth, capeHeight, System.currentTimeMillis(), false);
         cachedCapes.put(playerID.toString() + ".Bedrock", cape);
+        return playerID.toString() + ".Bedrock";
     }
 
-    public static void storeBedrockGeometry(UUID playerID, byte[] geometryName, byte[] geometryData) {
+    public static String storeBedrockGeometry(UUID playerID, byte[] geometryName, byte[] geometryData) {
         SkinGeometry geometry = new SkinGeometry(new String(geometryName), new String(geometryData), false);
-        cachedGeometry.put(playerID, geometry);
+        cachedGeometry.put(playerID.toString(), geometry);
+        return playerID.toString();
     }
 
     /**
@@ -300,8 +312,9 @@ public class SkinProvider {
      * @param playerID The UUID to cache it against
      * @param skin The skin to cache
      */
-    public static void storeEarSkin(UUID playerID, Skin skin) {
+    public static String storeEarSkin(UUID playerID, Skin skin) {
         cachedSkins.put(skin.getTextureUrl(), skin);
+        return skin.getTextureUrl();
     }
 
     /**
@@ -310,23 +323,37 @@ public class SkinProvider {
      * @param playerID The UUID to cache it against
      * @param isSlim If the player is using an slim base
      */
-    public static void storeEarGeometry(UUID playerID, boolean isSlim) {
-        cachedGeometry.put(playerID, SkinGeometry.getEars(isSlim));
+    public static String storeEarGeometry(UUID playerID, boolean isSlim) {
+        cachedGeometry.put(playerID.toString(), SkinGeometry.getEars(isSlim));
+        return playerID.toString();
     }
 
     private static Skin supplySkin(UUID uuid, String textureUrl) {
         try {
-            byte[] skin = requestImage(textureUrl, null);
-            return new Skin(uuid, textureUrl, skin, System.currentTimeMillis(), false, false);
+            BufferedImage skinImage = requestImage(textureUrl, null);
+            byte[] skin = bufferedImageToImageData(skinImage);
+            int width = skinImage.getWidth();
+            int height = skinImage.getHeight();
+            skinImage.flush();
+            return Skin.builder().skinOwner(uuid).textureUrl(textureUrl).skinData(skin).skinWidth(width)
+                    .skinHeight(height).requestedOn(System.currentTimeMillis()).updated(false).ears(false).build();
         } catch (Exception ignored) {} // just ignore I guess
 
-        return new Skin(uuid, "empty", EMPTY_SKIN.getSkinData(), System.currentTimeMillis(), false, false);
+        return Skin.builder().skinOwner(uuid).textureUrl("empty").skinData(EMPTY_SKIN.getSkinData())
+                .requestedOn(System.currentTimeMillis()).updated(false).ears(false).build();
     }
 
     private static Cape supplyCape(String capeUrl, CapeProvider provider) {
         byte[] cape = new byte[0];
+        int width = 0;
+        int height = 0;
+
         try {
-            cape = requestImage(capeUrl, provider);
+            BufferedImage capeImage = requestImage(capeUrl, provider);
+            cape = bufferedImageToImageData(capeImage);
+            width = capeImage.getWidth();
+            height = capeImage.getHeight();
+            capeImage.flush();
         } catch (Exception ignored) {} // just ignore I guess
 
         String[] urlSection = capeUrl.split("/"); // A real url is expected at this stage
@@ -335,6 +362,8 @@ public class SkinProvider {
                 capeUrl,
                 urlSection[urlSection.length - 1], // get the texture id and use it as cape id
                 cape.length > 0 ? cape : EMPTY_CAPE.getCapeData(),
+                width,
+                height,
                 System.currentTimeMillis(),
                 cape.length == 0
         );
@@ -368,22 +397,22 @@ public class SkinProvider {
             byte[] data = bufferedImageToImageData(newSkin);
             skinImage.flush();
 
-            // Create a new skin object with the new infomation
-            return new Skin(
-                    existingSkin.getSkinOwner(),
-                    existingSkin.getTextureUrl(),
-                    data,
-                    System.currentTimeMillis(),
-                    true,
-                    true
-            );
+            // Create a new skin object with the new information
+            return Skin.builder()
+                    .skinOwner(existingSkin.getSkinOwner())
+                    .textureUrl(existingSkin.getTextureUrl())
+                    .skinData(data)
+                    .requestedOn(System.currentTimeMillis())
+                    .updated(true)
+                    .ears(true)
+                    .build();
         } catch (Exception ignored) {} // just ignore I guess
 
         return existingSkin;
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    private static byte[] requestImage(String imageUrl, CapeProvider provider) throws Exception {
+    private static BufferedImage requestImage(String imageUrl, CapeProvider provider) throws Exception {
         BufferedImage image = null;
 
         // First see if we have a cached file. We also update the modification stamp so we know when the file was last used
@@ -425,9 +454,8 @@ public class SkinProvider {
             image = newImage;
         }
 
-        byte[] data = bufferedImageToImageData(image);
-        image.flush();
-        return data;
+
+        return image;
     }
 
     /**
@@ -576,6 +604,7 @@ public class SkinProvider {
         return defaultValue;
     }
 
+
     @AllArgsConstructor
     @Getter
     public static class SkinAndCape {
@@ -585,13 +614,36 @@ public class SkinProvider {
 
     @AllArgsConstructor
     @Getter
+    @Builder
     public static class Skin {
         private UUID skinOwner;
         private String textureUrl;
-        private byte[] skinData;
-        private long requestedOn;
-        private boolean updated;
-        private boolean ears;
+        @Builder.Default
+        private byte[] skinData = EMPTY_SKIN.getSkinData();
+        private int skinWidth;
+        private int skinHeight;
+        @Builder.Default
+        private long requestedOn = System.currentTimeMillis();
+        @Builder.Default
+        private boolean updated = false;
+        @Builder.Default
+        private boolean ears = false;
+        @Builder.Default
+        private List<SkinAnimation> animations = Collections.emptyList();
+        private String animationData;
+        @Builder.Default
+        private boolean premium = false;
+        @Builder.Default
+        private boolean persona = false;
+        @Builder.Default
+        private String armSize = "wide";
+        @Builder.Default
+        private String skinColor = "#0";
+        @Builder.Default
+        private List<PersonaSkinPiece> personaPieces = Collections.emptyList();
+        @Builder.Default
+        private List<PersonaSkinPieceTintColor> personaTintColors = Collections.emptyList();
+
 
         private Skin(long requestedOn, String textureUrl, byte[] skinData) {
             this.requestedOn = requestedOn;
@@ -606,6 +658,8 @@ public class SkinProvider {
         private String textureUrl;
         private String capeId;
         private byte[] capeData;
+        private int capeWidth;
+        private int capeHeight;
         private long requestedOn;
         private boolean failed;
     }

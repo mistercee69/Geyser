@@ -62,6 +62,7 @@ public class SkullSkinManager extends SkinManager {
 
     public static void requestAndHandleSkin(PlayerEntity entity, GeyserSession session,
                                             Consumer<SkinProvider.Skin> skinConsumer) {
+
         GameProfileData data = GameProfileData.from(entity.getProfile());
 
         SkinProvider.requestSkin(entity.getUuid(), data.getSkinUrl(), false)

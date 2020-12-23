@@ -33,7 +33,8 @@ import org.geysermc.connector.network.session.GeyserSession;
 import org.geysermc.connector.network.translators.PacketTranslator;
 import org.geysermc.connector.network.translators.Translator;
 import org.geysermc.connector.utils.LanguageUtils;
-import org.geysermc.connector.skin.SkinManager;
+
+import static org.geysermc.connector.skin.SkinManager.updatePlayerList;
 
 @Translator(packet = ServerSpawnPlayerPacket.class)
 public class JavaSpawnPlayerTranslator extends PacketTranslator<ServerSpawnPlayerPacket> {
@@ -42,12 +43,14 @@ public class JavaSpawnPlayerTranslator extends PacketTranslator<ServerSpawnPlaye
     public void translate(ServerSpawnPlayerPacket packet, GeyserSession session) {
         Vector3f position = Vector3f.from(packet.getX(), packet.getY(), packet.getZ());
         Vector3f rotation = Vector3f.from(packet.getYaw(), packet.getPitch(), packet.getYaw());
-
+        GeyserConnector.getInstance().getLogger().info("Spawn Player: " + packet.getUuid());
         PlayerEntity entity;
         if (packet.getUuid().equals(session.getPlayerEntity().getUuid())) {
             // Server is sending a fake version of the current player
+            GeyserConnector.getInstance().getLogger().info("(self) Spawn Player: " + packet.getUuid());
             entity = new PlayerEntity(session.getPlayerEntity().getProfile(), packet.getEntityId(), session.getEntityCache().getNextEntityId().incrementAndGet(), position, Vector3f.ZERO, rotation);
         } else {
+            GeyserConnector.getInstance().getLogger().info("(other) Spawn Player: " + packet.getUuid());
             entity = session.getEntityCache().getPlayerEntity(packet.getUuid());
             if (entity == null) {
                 GeyserConnector.getInstance().getLogger().error(LanguageUtils.getLocaleStringLog("geyser.entity.player.failed_list", packet.getUuid()));
@@ -62,7 +65,7 @@ public class JavaSpawnPlayerTranslator extends PacketTranslator<ServerSpawnPlaye
 
         if (session.getUpstream().isInitialized()) {
             entity.sendPlayer(session);
-            SkinManager.requestAndHandleSkinAndCape(entity, session, null);
+            updatePlayerList(session, entity);
         }
     }
 }
