@@ -32,9 +32,8 @@ import org.geysermc.connector.entity.player.PlayerEntity;
 import org.geysermc.connector.network.session.GeyserSession;
 import org.geysermc.connector.network.translators.PacketTranslator;
 import org.geysermc.connector.network.translators.Translator;
+import org.geysermc.connector.skin.SkinManager;
 import org.geysermc.connector.utils.LanguageUtils;
-
-import static org.geysermc.connector.skin.SkinManager.updatePlayerList;
 
 @Translator(packet = ServerSpawnPlayerPacket.class)
 public class JavaSpawnPlayerTranslator extends PacketTranslator<ServerSpawnPlayerPacket> {
@@ -65,7 +64,7 @@ public class JavaSpawnPlayerTranslator extends PacketTranslator<ServerSpawnPlaye
 
         if (session.getUpstream().isInitialized()) {
             entity.sendPlayer(session);
-            updatePlayerList(session, entity);
+            SkinManager.registerSkinAsync(entity, session, null);
         }
     }
 }

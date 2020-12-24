@@ -42,6 +42,7 @@ import com.nukkitx.protocol.bedrock.packet.SetEntityLinkPacket;
 import com.nukkitx.protocol.bedrock.packet.UpdateAttributesPacket;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import net.kyori.adventure.text.Component;
 import org.geysermc.connector.entity.Entity;
 import org.geysermc.connector.entity.LivingEntity;
@@ -61,6 +62,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Getter @Setter
+@ToString
 public class PlayerEntity extends LivingEntity {
     private GameProfile profile;
     private UUID uuid;
@@ -78,14 +80,18 @@ public class PlayerEntity extends LivingEntity {
 
     public PlayerEntity(GameProfile gameProfile, long entityId, long geyserId, Vector3f position, Vector3f motion, Vector3f rotation) {
         super(entityId, geyserId, EntityType.PLAYER, position, motion, rotation);
-
-        setProfile(profile);
+        setProfile(gameProfile);
     }
 
     public void setProfile(GameProfile gameProfile) {
         this.profile = gameProfile;
-        uuid = profile.getId();
-        username = profile.getName();
+        if (profile != null) {
+            uuid = profile.getId();
+            username = profile.getName();
+        } else {
+            uuid = null;
+            username = null;
+        }
     }
 
     @Override

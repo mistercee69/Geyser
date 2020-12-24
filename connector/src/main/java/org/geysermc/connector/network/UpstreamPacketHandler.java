@@ -26,21 +26,18 @@
 package org.geysermc.connector.network;
 
 import com.nukkitx.protocol.bedrock.BedrockPacket;
-import com.nukkitx.protocol.bedrock.data.ResourcePackType;
 import com.nukkitx.protocol.bedrock.BedrockPacketCodec;
+import com.nukkitx.protocol.bedrock.data.ResourcePackType;
+import com.nukkitx.protocol.bedrock.data.skin.SerializedSkin;
 import com.nukkitx.protocol.bedrock.packet.*;
 import org.geysermc.connector.GeyserConnector;
 import org.geysermc.connector.common.AuthType;
 import org.geysermc.connector.configuration.GeyserConfiguration;
 import org.geysermc.connector.network.session.GeyserSession;
+import org.geysermc.connector.network.session.auth.BedrockClientData;
 import org.geysermc.connector.network.translators.PacketTranslatorRegistry;
-import org.geysermc.connector.utils.LanguageUtils;
-import org.geysermc.connector.utils.LoginEncryptionUtils;
-import org.geysermc.connector.utils.MathUtils;
-import org.geysermc.connector.utils.ResourcePack;
-import org.geysermc.connector.utils.ResourcePackManifest;
-import org.geysermc.connector.utils.SettingsUtils;
-import org.geysermc.connector.utils.StatisticsUtils;
+import org.geysermc.connector.skin.SkinManager;
+import org.geysermc.connector.utils.*;
 
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -53,6 +50,31 @@ public class UpstreamPacketHandler extends LoggingPacketHandler {
 
     private boolean translateAndDefault(BedrockPacket packet) {
         return PacketTranslatorRegistry.BEDROCK_TRANSLATOR.translate(packet.getClass(), packet, session);
+    }
+
+    @Override
+    public boolean handle(PlayerSkinPacket packet) {
+        session.getConnector().getLogger().info("Player skin received: " + packet);
+        if (packet.getUuid().equals(session.getAuthData().getUUID())) {
+            BedrockClientData clientData = session.getClientData();
+            SerializedSkin skin = packet.getSkin();
+            SkinManager.updateBedrockSkin(session.getPlayerEntity(), session, skin, uuid -> {});
+
+            // notify other clients (use geyser uuid)
+            packet.setUuid(session.getPlayerEntity().getUuid());
+            session.broadcastUpstreamPacket(packet);
+
+            // acknowledge to sending client
+            PlayerSkinPacket ack = new PlayerSkinPacket();
+            ack.setSkin(packet.getSkin());
+            ack.setOldSkinName(packet.getOldSkinName());
+            ack.setNewSkinName(packet.getNewSkinName());
+            ack.setUuid(session.getAuthData().getUUID());
+            ack.setTrustedSkin(true);
+            session.sendUpstreamPacket(ack);
+        }
+
+        return true;
     }
 
     @Override

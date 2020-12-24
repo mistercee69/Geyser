@@ -29,6 +29,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nukkitx.network.raknet.RakNetConstants;
+import com.nukkitx.protocol.bedrock.BedrockPacket;
 import com.nukkitx.protocol.bedrock.BedrockServer;
 import lombok.Getter;
 import lombok.Setter;
@@ -321,6 +322,17 @@ public class GeyserConnector {
 
     public void removePlayer(GeyserSession player) {
         players.remove(player);
+    }
+
+    /**
+     * Notify all players
+     */
+    public void broadcastUpstreamPacket(BedrockPacket packet) {
+        for (GeyserSession session : players) {
+            if (session.getUpstream().isInitialized()) {
+                session.sendUpstreamPacket(packet);
+            }
+        }
     }
 
     /**

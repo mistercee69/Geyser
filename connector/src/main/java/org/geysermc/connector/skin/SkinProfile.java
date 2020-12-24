@@ -1,9 +1,6 @@
 package org.geysermc.connector.skin;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.UUID;
 
@@ -11,6 +8,7 @@ import java.util.UUID;
 @Setter
 @AllArgsConstructor
 @Builder
+@ToString
 public class SkinProfile {
     private UUID playerId;
     private boolean bedrockSkinLoaded;

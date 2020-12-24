@@ -35,7 +35,6 @@ import org.geysermc.connector.GeyserConnector;
 import org.geysermc.connector.common.AuthType;
 import org.geysermc.connector.entity.player.PlayerEntity;
 import org.geysermc.connector.network.session.GeyserSession;
-import org.geysermc.connector.network.session.auth.BedrockClientData;
 import org.geysermc.connector.utils.LanguageUtils;
 
 import java.nio.charset.StandardCharsets;
@@ -52,25 +51,60 @@ public class SkinManager {
     private static final Map<UUID, SkinProfile> cachedSkinProfile = new ConcurrentHashMap<>();
 
 
-    public static UUID registerBedrockSkin(PlayerEntity playerEntity, BedrockClientData clientData) {
-        GeyserConnector.getInstance().getLogger().info(LanguageUtils.getLocaleStringLog("geyser.skin.bedrock.register", playerEntity.getUsername(), playerEntity.getUuid()));
+    public static void updateBedrockSkin(PlayerEntity playerEntity, GeyserSession session, SerializedSkin skin, Consumer<SkinAndCape> skinAndCapeConsumer) {
+        GeyserConnector.getInstance().getLogger().info(LanguageUtils.getLocaleStringLog("geyser.skin.bedrock.update", playerEntity.getUsername(), playerEntity.getUuid()));
 
+        session.getClientData().setSkinId(skin.getSkinId());
+        session.getClientData().setSkinData(skin.getSkinData().getImage());
+        session.getClientData().setSkinImageHeight(skin.getSkinData().getHeight());
+        session.getClientData().setSkinImageWidth(skin.getSkinData().getWidth());
+
+        if (skin.getAnimations() != null) {
+            session.getClientData().setAnimations(skin.getAnimations().stream().map(SkinManager::toSkinAnimation).collect(Collectors.toList()));
+        }
+
+        session.getClientData().setCapeId(skin.getCapeId());
+        session.getClientData().setCapeData(skin.getCapeData().getImage());
+        session.getClientData().setCapeImageHeight(skin.getCapeData().getHeight());
+        session.getClientData().setCapeImageWidth(skin.getCapeData().getWidth());
+        session.getClientData().setCapeOnClassicSkin(skin.isCapeOnClassic());
+        session.getClientData().setGeometryName(Base64.getEncoder().encodeToString(skin.getSkinResourcePatch().getBytes(StandardCharsets.UTF_8)));
+        session.getClientData().setGeometryData(Base64.getEncoder().encodeToString(skin.getGeometryData().getBytes(StandardCharsets.UTF_8)));
+        session.getClientData().setPersonaSkin(skin.isPersona());
+        session.getClientData().setPremiumSkin(skin.isPremium());
+        session.getClientData().setArmSize(skin.getArmSize());
+        session.getClientData().setSkinAnimationData(skin.getAnimationData());
+        session.getClientData().setSkinColor(skin.getSkinColor());
+
+        if (skin.getPersonaPieces() != null) {
+            session.getClientData().setPersonaSkinPieces(skin.getPersonaPieces().stream().map(SkinManager::toPersonaPieceData).collect(Collectors.toList()));
+        }
+        if (skin.getTintColors() != null) {
+            session.getClientData().setPersonaTintColors(skin.getTintColors().stream().map(SkinManager::toPersonaSkinPieceTintColor).collect(Collectors.toList()));
+        }
+
+        registerBedrockSkin(playerEntity, session, skinAndCapeConsumer);
+    }
+
+    public static void registerBedrockSkin(PlayerEntity playerEntity, GeyserSession session, Consumer<SkinAndCape> skinAndCapeConsumer) {
+        GeyserConnector.getInstance().getLogger().info(LanguageUtils.getLocaleStringLog("geyser.skin.bedrock.register", playerEntity.getUsername(), playerEntity.getUuid()));
         SkinProfile.SkinProfileBuilder builder = SkinProfile.builder();
+        builder.playerId(playerEntity.getUuid());
 
         try {
-            byte[] skinBytes = clientData.getSkinData();
-            byte[] capeBytes = clientData.getCapeData();
+            byte[] skinBytes = session.getClientData().getSkinData();
+            byte[] capeBytes = session.getClientData().getCapeData();
 
-            byte[] geometryNameBytes = Base64.getDecoder().decode(clientData.getGeometryName().getBytes(StandardCharsets.UTF_8));
-            byte[] geometryBytes = Base64.getDecoder().decode(clientData.getGeometryData().getBytes(StandardCharsets.UTF_8));
+            byte[] geometryNameBytes = Base64.getDecoder().decode(session.getClientData().getGeometryName().getBytes(StandardCharsets.UTF_8));
+            byte[] geometryBytes = Base64.getDecoder().decode(session.getClientData().getGeometryData().getBytes(StandardCharsets.UTF_8));
 
-            GeyserConnector.getInstance().getLogger().info("Player '" + playerEntity.getUsername() + "' skin is: " + clientData.getSkinImageWidth() + "x" + clientData.getSkinImageHeight() +
-                    " isPersona: " + clientData.isPersonaSkin() + " isPremium: " + clientData.isPremiumSkin() + " id: " + clientData.getSkinId());
+            GeyserConnector.getInstance().getLogger().info("Player '" + playerEntity.getUsername() + "' skin is: " + session.getClientData().getSkinImageWidth() + "x" + session.getClientData().getSkinImageHeight() +
+                    " isPersona: " + session.getClientData().isPersonaSkin() + " isPremium: " + session.getClientData().isPremiumSkin() + " id: " + session.getClientData().getSkinId());
 
-            if (skinBytes.length <= (128 * 128 * 4) && !clientData.isPersonaSkin() && !clientData.isPremiumSkin()) {
+            if (skinBytes.length <= (128 * 128 * 4) && !session.getClientData().isPersonaSkin() && !session.getClientData().isPremiumSkin()) {
                 Skin skin = Skin.builder()
                         .skinOwner(playerEntity.getUuid())
-                        .textureUrl(clientData.getSkinId())
+                        .textureUrl(session.getClientData().getSkinId())
                         .skinData(skinBytes)
                         .build();
 
@@ -79,131 +113,138 @@ public class SkinManager {
             } else if (skinBytes.length >= (64 * 32 * 4)) {
                 Skin skin = Skin.builder()
                         .skinOwner(playerEntity.getUuid())
-                        .textureUrl(clientData.getSkinId())
-                        .skinWidth(clientData.getSkinImageWidth())
-                        .skinHeight(clientData.getSkinImageHeight())
+                        .textureUrl(session.getClientData().getSkinId())
+                        .skinWidth(session.getClientData().getSkinImageWidth())
+                        .skinHeight(session.getClientData().getSkinImageHeight())
                         .skinData(skinBytes)
-                        .animations(clientData.getAnimations() != null ? clientData.getAnimations() : Collections.emptyList())
-                        .animationData(clientData.getSkinAnimationData())
-                        .premium(clientData.isPremiumSkin())
-                        .persona(clientData.isPersonaSkin())
-                        .armSize(clientData.getArmSize())
-                        .skinColor(clientData.getSkinColor())
-                        .personaPieces(clientData.getPersonaSkinPieces() != null ? clientData.getPersonaSkinPieces() : Collections.emptyList())
-                        .personaTintColors(clientData.getPersonaTintColors() != null ? clientData.getPersonaTintColors() : Collections.emptyList())
+                        .animations(session.getClientData().getAnimations() != null ? session.getClientData().getAnimations() : Collections.emptyList())
+                        .animationData(session.getClientData().getSkinAnimationData())
+                        .premium(session.getClientData().isPremiumSkin())
+                        .persona(session.getClientData().isPersonaSkin())
+                        .armSize(session.getClientData().getArmSize())
+                        .skinColor(session.getClientData().getSkinColor())
+                        .personaPieces(session.getClientData().getPersonaSkinPieces() != null ? session.getClientData().getPersonaSkinPieces() : Collections.emptyList())
+                        .personaTintColors(session.getClientData().getPersonaTintColors() != null ? session.getClientData().getPersonaTintColors() : Collections.emptyList())
                         .build();
 
-                builder.isPersona(clientData.isPersonaSkin());
-                builder.isPremium(clientData.isPremiumSkin());
+                builder.isPersona(session.getClientData().isPersonaSkin());
+                builder.isPremium(session.getClientData().isPremiumSkin());
                 builder.skinId(storeBedrockSkin(skin));
                 builder.geometryId(storeBedrockGeometry(playerEntity.getUuid(), geometryNameBytes, geometryBytes));
             } else {
                 GeyserConnector.getInstance().getLogger().info(LanguageUtils.getLocaleStringLog("geyser.skin.bedrock.fail", playerEntity.getUsername()));
-                GeyserConnector.getInstance().getLogger().debug("The size of '" + playerEntity.getUsername() + "' skin is: " + clientData.getSkinImageWidth() + "x" + clientData.getSkinImageHeight());
+                GeyserConnector.getInstance().getLogger().debug("The size of '" + playerEntity.getUsername() + "' skin is: " + session.getClientData().getSkinImageWidth() + "x" + session.getClientData().getSkinImageHeight());
             }
 
-            if (!clientData.getCapeId().equals("")) {
-                builder.capeId(storeBedrockCape(playerEntity.getUuid(), capeBytes, clientData.getCapeImageWidth(), clientData.getCapeImageHeight()));
+            if (!session.getClientData().getCapeId().equals("")) {
+                builder.capeId(storeBedrockCape(playerEntity.getUuid(), capeBytes, session.getClientData().getCapeImageWidth(), session.getClientData().getCapeImageHeight()));
             }
 
             builder.bedrockSkinLoaded(true);
             SkinProfile skinProfile = builder.build();
             cachedSkinProfile.put(playerEntity.getUuid(), skinProfile);
-            return playerEntity.getUuid();
+            updatePlayerList(session, playerEntity);
+            if (skinAndCapeConsumer != null) {
+                Skin skin = getCachedSkin(skinProfile.getSkinId());
+                Cape cape = getCachedCape(skinProfile.getCapeId());
+                skinAndCapeConsumer.accept(new SkinAndCape(skin, cape));
+            }
         } catch (Exception e) {
             throw new AssertionError("Failed to cache skin for bedrock user (" + playerEntity.getUsername() + "): ", e);
         }
     }
 
-    public static void registerSkinAsync(PlayerEntity entity, Consumer<UUID> skinRegistrationConsumer) {
-        SkinProfile skinProfile = cachedSkinProfile.get(entity.getUuid());
-        if (!skinProfile.isBedrockSkinLoaded()) {
-            GameProfileData data = GameProfileData.from(entity.getProfile());
-            requestSkinAndCape(entity.getUuid(), data.getSkinUrl(), data.getCapeUrl())
-                    .whenCompleteAsync((skinAndCape, throwable) -> {
-                                try {
+    public static void registerSkinAsync(PlayerEntity entity, GeyserSession session,
+                                         Consumer<SkinAndCape> skinAndCapeConsumer) {
 
-                                    SkinProfile.SkinProfileBuilder skinProfileBuilder = SkinProfile.builder();
-                                    skinProfileBuilder.playerId(entity.getUuid());
-                                    skinProfileBuilder.bedrockSkinLoaded(false);
+        GameProfileData data = GameProfileData.from(entity.getProfile());
+        requestSkinAndCape(entity.getUuid(), data.getSkinUrl(), data.getCapeUrl())
+                .whenCompleteAsync((skinAndCape, throwable) -> {
+                    try {
+                        Skin skin;
+                        Cape cape;
+                        SkinProfile skinProfile = cachedSkinProfile.get(entity.getUuid());
+                        if (skinProfile.isBedrockSkinLoaded()) {
+                            skin = getCachedSkin(skinProfile.getSkinId());
+                            cape = getCachedCape(skinProfile.getCapeId());
+                        } else {
+                            SkinProfile.SkinProfileBuilder skinProfileBuilder = SkinProfile.builder();
+                            skinProfileBuilder.playerId(entity.getUuid());
+                            skinProfileBuilder.bedrockSkinLoaded(false);
 
-                                    Skin skin = skinAndCape.getSkin();
-                                    skinProfileBuilder.skinId(skin.getTextureUrl());
+                            skin = skinAndCape.getSkin();
+                            skinProfileBuilder.skinId(skin.getTextureUrl());
 
-                                    Cape cape = skinAndCape.getCape();
+                            cape = skinAndCape.getCape();
+
+                            if (!cape.isFailed()) {
+                                skinProfileBuilder.capeId(cape.getTextureUrl());
+                            } else {
+                                cape = getOrDefault(requestBedrockCape(entity.getUuid()),
+                                        EMPTY_CAPE, 3);
+
+                                if (!cape.isFailed()) {
+                                    skinProfileBuilder.capeId(cape.getTextureUrl());
+                                } else if (ALLOW_THIRD_PARTY_CAPES) {
+
+                                    cape = getOrDefault(requestUnofficialCape(
+                                            cape, entity.getUuid(),
+                                            entity.getUsername(), false
+                                    ), EMPTY_CAPE, CapeProvider.VALUES.length * 3);
 
                                     if (!cape.isFailed()) {
                                         skinProfileBuilder.capeId(cape.getTextureUrl());
-                                    } else {
-                                        cape = getOrDefault(requestBedrockCape(entity.getUuid()),
-                                                EMPTY_CAPE, 3);
-
-                                        if (!cape.isFailed()) {
-                                            skinProfileBuilder.capeId(cape.getTextureUrl());
-                                        } else if (ALLOW_THIRD_PARTY_CAPES) {
-
-                                            cape = getOrDefault(requestUnofficialCape(
-                                                    cape, entity.getUuid(),
-                                                    entity.getUsername(), false
-                                            ), EMPTY_CAPE, CapeProvider.VALUES.length * 3);
-
-                                            if (!cape.isFailed()) {
-                                                skinProfileBuilder.capeId(cape.getTextureUrl());
-                                            }
-                                        }
                                     }
-
-                                    SkinGeometry geometry = SkinGeometry.getLegacy(data.isAlex());
-                                    skinProfileBuilder.geometryId(data.isAlex() ? "alex" : "steve");
-
-                                    geometry = getOrDefault(requestBedrockGeometry(
-                                            geometry, entity.getUuid()
-                                    ), geometry, 3);
-
-                                    if (!geometry.isFailed()) {
-                                        skinProfileBuilder.geometryId(entity.getUuid().toString());
-                                    } else if (ALLOW_THIRD_PARTY_EARS) {
-                                        // Not a bedrock player check for ears
-                                        boolean isEars;
-
-                                        // Its deadmau5, gotta support his skin :)
-                                        if (entity.getUuid().toString().equals("1e18d5ff-643d-45c8-b509-43b8461d8614")) {
-                                            isEars = true;
-                                        } else {
-                                            // Get the ears texture for the player
-                                            skin = getOrDefault(requestUnofficialEars(
-                                                    skin, entity.getUuid(), entity.getUsername(), false
-                                            ), skin, 3);
-
-                                            isEars = skin.isEars();
-                                        }
-
-                                        // Does the skin have an ears texture
-                                        if (isEars) {
-                                            // Get the new geometry
-                                            geometry = SkinGeometry.getEars(data.isAlex());
-
-                                            // Store the skin and geometry for the ears
-                                            skinProfileBuilder.skinId(storeEarSkin(entity.getUuid(), skin));
-                                            skinProfileBuilder.geometryId(storeEarGeometry(entity.getUuid(), data.isAlex()));
-                                        }
-                                    }
-
-                                    cachedSkinProfile.put(entity.getUuid(), skinProfileBuilder.build());
-                                    if (skinRegistrationConsumer != null) {
-                                        skinRegistrationConsumer.accept(entity.getUuid());
-                                    }
-                                } catch (Exception e) {
-                                    GeyserConnector.getInstance().getLogger().error(LanguageUtils.getLocaleStringLog("geyser.skin.fail", entity.getUuid()), e);
                                 }
                             }
-                    );
-        } else {
-            // trigger immediately (not loading aysnc skins)
-            if (skinRegistrationConsumer != null) {
-                skinRegistrationConsumer.accept(entity.getUuid());
-            }
-        }
+
+                            SkinGeometry geometry = SkinGeometry.getLegacy(data.isAlex());
+                            skinProfileBuilder.geometryId(data.isAlex() ? "alex" : "steve");
+
+                            geometry = getOrDefault(requestBedrockGeometry(
+                                    geometry, entity.getUuid()
+                            ), geometry, 3);
+
+                            if (!geometry.isFailed()) {
+                                skinProfileBuilder.geometryId(entity.getUuid().toString());
+                            } else if (ALLOW_THIRD_PARTY_EARS) {
+                                // Not a bedrock player check for ears
+                                boolean isEars;
+
+                                // Its deadmau5, gotta support his skin :)
+                                if (entity.getUuid().toString().equals("1e18d5ff-643d-45c8-b509-43b8461d8614")) {
+                                    isEars = true;
+                                } else {
+                                    // Get the ears texture for the player
+                                    skin = getOrDefault(requestUnofficialEars(
+                                            skin, entity.getUuid(), entity.getUsername(), false
+                                    ), skin, 3);
+
+                                    isEars = skin.isEars();
+                                }
+
+                                // Does the skin have an ears texture
+                                if (isEars) {
+                                    // Get the new geometry
+                                    geometry = SkinGeometry.getEars(data.isAlex());
+
+                                    // Store the skin and geometry for the ears
+                                    skinProfileBuilder.skinId(storeEarSkin(entity.getUuid(), skin));
+                                    skinProfileBuilder.geometryId(storeEarGeometry(entity.getUuid(), data.isAlex()));
+                                }
+                            }
+
+                            cachedSkinProfile.put(entity.getUuid(), skinProfileBuilder.build());
+                        }
+
+                        updatePlayerList(session, entity);
+                        if (skinAndCapeConsumer != null) {
+                            skinAndCapeConsumer.accept(new SkinAndCape(skin, cape));
+                        }
+                    } catch (Exception e) {
+                        GeyserConnector.getInstance().getLogger().error(LanguageUtils.getLocaleStringLog("geyser.skin.fail", entity.getUuid()), e);
+                    }
+                });
     }
 
     @AllArgsConstructor
@@ -260,13 +301,30 @@ public class SkinManager {
         }
     }
 
-    public static PlayerListPacket.Entry buildCachedEntry(GeyserSession session, PlayerEntity playerEntity) {
+    public static void updatePlayerList(GeyserSession session, PlayerEntity entity) {
+        if (session.getUpstream().isInitialized()) {
+            PlayerListPacket.Entry updatedEntry = buildCachedEntry(session, entity);
 
+            PlayerListPacket playerAddPacket = new PlayerListPacket();
+            playerAddPacket.setAction(PlayerListPacket.Action.ADD);
+            playerAddPacket.getEntries().add(updatedEntry);
+            session.sendUpstreamPacket(playerAddPacket);
+
+            if (!entity.isPlayerList()) {
+                PlayerListPacket playerRemovePacket = new PlayerListPacket();
+                playerRemovePacket.setAction(PlayerListPacket.Action.REMOVE);
+                playerRemovePacket.getEntries().add(updatedEntry);
+                session.sendUpstreamPacket(playerRemovePacket);
+            }
+        }
+    }
+
+    public static PlayerListPacket.Entry buildCachedEntry(GeyserSession session, PlayerEntity playerEntity) {
         SkinProfile skinProfile = cachedSkinProfile.get(playerEntity.getUuid());
         Skin skin = getCachedSkin(skinProfile.getSkinId());
         Cape cape = getCachedCape(skinProfile.getCapeId());
-        SkinGeometry skinGeometry = skinProfile.isBedrockSkinLoaded() ? getCachedSkinGeometry(playerEntity.getUuid()) :
-                SkinGeometry.getLegacy("alex".equals(skinProfile.getGeometryId()));
+        GeyserConnector.getInstance().getLogger().info("SkinProfile: "+ skinProfile);
+        SkinGeometry skinGeometry = getCachedSkinGeometry(playerEntity.getUuid());
 
         return buildEntryManually(
                 session,
@@ -278,27 +336,7 @@ public class SkinManager {
                 skinGeometry);
     }
 
-    public static void updatePlayerList(GeyserSession session, PlayerEntity entity) {
-        SkinManager.registerSkinAsync(entity, uuid -> {
-            if (session.getUpstream().isInitialized()) {
-                PlayerListPacket.Entry updatedEntry = SkinManager.buildCachedEntry(session, entity);
-                PlayerListPacket playerAddPacket = new PlayerListPacket();
-                playerAddPacket.setAction(PlayerListPacket.Action.ADD);
-                playerAddPacket.getEntries().add(updatedEntry);
-                session.sendUpstreamPacket(playerAddPacket);
-
-                if (!entity.isPlayerList()) {
-                    PlayerListPacket playerRemovePacket = new PlayerListPacket();
-                    playerRemovePacket.setAction(PlayerListPacket.Action.REMOVE);
-                    playerRemovePacket.getEntries().add(updatedEntry);
-                    session.sendUpstreamPacket(playerRemovePacket);
-                }
-                GeyserConnector.getInstance().getLogger().debug("Loaded Local Bedrock Java Skin Data");
-            }
-        });
-    }
-
-    public static PlayerListPacket.Entry buildEntryManually(GeyserSession session, UUID uuid, String username, long geyserId,
+    private static PlayerListPacket.Entry buildEntryManually(GeyserSession session, UUID uuid, String username, long geyserId,
                                                                  Skin skin, Cape cape, SkinGeometry geometry) {
         List<AnimationData> animations = Collections.emptyList();
         if (skin.getAnimations() != null) {
@@ -356,11 +394,8 @@ public class SkinManager {
         entry.setPlatformChatId("");
         entry.setTeacher(false);
         entry.setTrustedSkin(true);
-        GeyserConnector.getInstance().getLogger().info("For " + session.getPlayerEntity().getUuid() + " list update " + entry);
         return entry;
     }
-
-
 
     private static AnimatedTextureType toAnimatedTextureType(TextureType textureType) {
         if (textureType != null) {
@@ -379,7 +414,24 @@ public class SkinManager {
         return AnimatedTextureType.NONE;
     }
 
-    private static AnimationExpressionType toAnimationExpression(ExpressionType expressionType) {
+    private static TextureType toTextureType(AnimatedTextureType animatedTextureType) {
+        if (animatedTextureType != null) {
+            switch (animatedTextureType) {
+                case FACE:
+                    return TextureType.FACE;
+                case BODY_32X32:
+                    return TextureType.BODY_32X32;
+                case BODY_128X128:
+                    return TextureType.BODY_128X128;
+                case NONE:
+                default:
+                    return TextureType.NONE;
+            }
+        }
+        return TextureType.NONE;
+    }
+
+    private static AnimationExpressionType toAnimationExpressionType(ExpressionType expressionType) {
         if (expressionType != null) {
             switch (expressionType) {
                 case BLINKING:
@@ -392,9 +444,29 @@ public class SkinManager {
         return AnimationExpressionType.LINEAR;
     }
 
+    private static ExpressionType toExpressionType(AnimationExpressionType animationExpressionType) {
+        if (animationExpressionType != null) {
+            switch (animationExpressionType) {
+                case BLINKING:
+                    return ExpressionType.BLINKING;
+                case LINEAR:
+                default:
+                    return ExpressionType.LINEAR;
+            }
+        }
+        return ExpressionType.LINEAR;
+    }
+
     private static AnimationData toAnimationData(SkinAnimation skinAnimation) {
-        return new AnimationData(ImageData.of(skinAnimation.getImageData()), toAnimatedTextureType(skinAnimation.getTextureType()),
-                skinAnimation.getFrames(), toAnimationExpression(skinAnimation.getExpressionType()));
+        return new AnimationData(ImageData.of(skinAnimation.getImageWidth(), skinAnimation.getImageHeight(),
+                skinAnimation.getImageData()), toAnimatedTextureType(skinAnimation.getTextureType()),
+                skinAnimation.getFrames(), toAnimationExpressionType(skinAnimation.getExpressionType()));
+    }
+
+    private static SkinAnimation toSkinAnimation(AnimationData animationData) {
+        ImageData image = animationData.getImage();
+        return new SkinAnimation(image.getImage(), image.getHeight(), image.getWidth(), toTextureType(animationData.getTextureType()),
+                animationData.getFrames(), toExpressionType(animationData.getExpressionType()));
     }
 
     private static PersonaPieceData toPersonaPieceData(PersonaSkinPiece personaSkinPiece) {
@@ -402,7 +474,16 @@ public class SkinManager {
                 personaSkinPiece.getProductId());
     }
 
+    private static PersonaSkinPiece toPersonaPieceData(PersonaPieceData personaPieceData) {
+        return new PersonaSkinPiece(personaPieceData.getId(), personaPieceData.getType(), personaPieceData.getPackId(), personaPieceData.isDefault(),
+                personaPieceData.getProductId());
+    }
+
     private static PersonaPieceTintData toPersonaPieceTintData(PersonaSkinPieceTintColor personaSkinPieceTintColor) {
         return new PersonaPieceTintData(personaSkinPieceTintColor.getType(), personaSkinPieceTintColor.getColors());
+    }
+
+    private static PersonaSkinPieceTintColor toPersonaSkinPieceTintColor(PersonaPieceTintData personaPieceTintData) {
+        return new PersonaSkinPieceTintColor(personaPieceTintData.getType(), personaPieceTintData.getColors());
     }
 }

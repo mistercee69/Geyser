@@ -562,7 +562,7 @@ public class GeyserSession implements CommandSender {
 
                                 // Check if they are not using a linked account
                                 if (isOffline() || isFloodgate()) {
-                                    SkinManager.registerBedrockSkin(playerEntity, clientData);
+                                    SkinManager.registerBedrockSkin(playerEntity, GeyserSession.this, null);
                                 }
                             }
 
@@ -813,6 +813,15 @@ public class GeyserSession implements CommandSender {
             connector.getLogger().debug("Tried to send upstream packet " + packet.getClass().getSimpleName() + " but the session was null");
         }
     }
+
+    public void broadcastUpstreamPacket(BedrockPacket packet) {
+        for (GeyserSession session : GeyserConnector.getInstance().getPlayers()) {
+            if (session != this && session.getUpstream().isInitialized()) {
+                session.sendUpstreamPacket(packet);
+            }
+        }
+    }
+
 
     /**
      * Send a packet immediately to the player.

@@ -36,8 +36,6 @@ import org.geysermc.connector.network.translators.PacketTranslator;
 import org.geysermc.connector.network.translators.Translator;
 import org.geysermc.connector.skin.SkinManager;
 
-import static org.geysermc.connector.skin.SkinManager.updatePlayerList;
-
 @Translator(packet = ServerPlayerListEntryPacket.class)
 public class JavaPlayerListEntryTranslator extends PacketTranslator<ServerPlayerListEntryPacket> {
     @Override
@@ -56,8 +54,7 @@ public class JavaPlayerListEntryTranslator extends PacketTranslator<ServerPlayer
                     if (self) {
                         // Entity is ourself
                         playerEntity = session.getPlayerEntity();
-                        //TODO: playerEntity.setProfile(entry.getProfile()); seems to help with online mode skins but needs more testing to ensure Floodgate skins aren't overwritten
-                        updatePlayerList(session, playerEntity);
+                        SkinManager.registerSkinAsync(playerEntity, session, null);
                     } else {
                         playerEntity = session.getEntityCache().getPlayerEntity(entry.getProfile().getId());
                     }

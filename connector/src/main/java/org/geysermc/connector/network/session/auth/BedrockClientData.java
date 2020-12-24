@@ -28,7 +28,10 @@ package org.geysermc.connector.network.session.auth;
 import com.fasterxml.jackson.annotation.JsonEnumDefaultValue;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.geysermc.floodgate.util.DeviceOS;
 
 import java.util.List;
@@ -36,6 +39,7 @@ import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Getter
+@Setter
 public class BedrockClientData {
     @JsonProperty(value = "GameVersion")
     private String gameVersion;
@@ -108,13 +112,13 @@ public class BedrockClientData {
     @JsonProperty(value = "ClientRandomId")
     private long clientRandomId;
 
-
     @JsonProperty(value = "ThirdPartyNameOnly")
     private boolean thirdPartyNameOnly;
 
-
     @JsonIgnoreProperties(ignoreUnknown = true)
     @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class SkinAnimation {
         @JsonProperty(value = "Image")
         private byte[] imageData;
@@ -132,6 +136,8 @@ public class BedrockClientData {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class PersonaSkinPiece {
         @JsonProperty(value = "PieceId")
         private String id;
@@ -147,6 +153,8 @@ public class BedrockClientData {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class PersonaSkinPieceTintColor {
         @JsonProperty(value = "PieceType")
         private String type;

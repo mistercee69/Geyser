@@ -76,7 +76,7 @@ public class SkinProvider {
 
     private static final Map<String, CompletableFuture<Skin>> requestedSkins = new ConcurrentHashMap<>();
 
-    public static final Cape EMPTY_CAPE = new Cape("", "no-cape", new byte[0], 0, 0, -1, true);
+    public static final Cape EMPTY_CAPE = new Cape("", "", new byte[0], 0, 0, -1, true);
     private static final Cache<String, Cape> cachedCapes = CacheBuilder.newBuilder()
             .expireAfterAccess(1, TimeUnit.HOURS)
             .build();
@@ -143,7 +143,7 @@ public class SkinProvider {
     }
 
     public static SkinGeometry getCachedSkinGeometry(UUID playerId) {
-        return playerId != null ? cachedGeometry.getOrDefault(playerId, SkinGeometry.getLegacy(false)) : SkinGeometry.getLegacy(false);
+        return playerId != null ? cachedGeometry.getOrDefault(playerId.toString(), SkinGeometry.getLegacy(false)) : SkinGeometry.getLegacy(false);
     }
 
     public static CompletableFuture<SkinAndCape> requestSkinAndCape(UUID playerId, String skinUrl, String capeUrl) {
