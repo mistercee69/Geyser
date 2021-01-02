@@ -380,6 +380,62 @@ public class GeyserConnector {
         return bootstrap.getGeyserLogger();
     }
 
+    public GeyserLogger getLogger(final GeyserSession session) {
+        return new GeyserLogger() {
+            final GeyserLogger logger = bootstrap.getGeyserLogger();
+
+            String prefixSession(GeyserSession session, String message) {
+                return "[" + session.getPlayerEntity().getUsername() + "|" +
+                        session.getPlayerEntity().getUuid() + "] " + message;
+            }
+
+            @Override
+            public void severe(String message) {
+                logger.severe(prefixSession(session, message));
+            }
+
+            @Override
+            public void severe(String message, Throwable error) {
+                logger.severe(prefixSession(session, message), error);
+            }
+
+            @Override
+            public void error(String message) {
+                logger.error(prefixSession(session, message));
+            }
+
+            @Override
+            public void error(String message, Throwable error) {
+                logger.error(prefixSession(session, message), error);
+            }
+
+            @Override
+            public void warning(String message) {
+                logger.warning(prefixSession(session, message));
+            }
+
+            @Override
+            public void info(String message) {
+                logger.info(prefixSession(session, message));
+            }
+
+            @Override
+            public void debug(String message) {
+                logger.debug(prefixSession(session, message));
+            }
+
+            @Override
+            public void setDebug(boolean debug) {
+                logger.setDebug(debug);
+            }
+
+            @Override
+            public boolean isDebug() {
+                return logger.isDebug();
+            }
+        };
+    }
+
     public GeyserConfiguration getConfig() {
         return bootstrap.getGeyserConfig();
     }

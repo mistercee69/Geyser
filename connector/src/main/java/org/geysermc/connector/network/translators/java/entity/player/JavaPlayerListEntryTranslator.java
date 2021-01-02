@@ -54,7 +54,7 @@ public class JavaPlayerListEntryTranslator extends PacketTranslator<ServerPlayer
                     if (self) {
                         // Entity is ourself
                         playerEntity = session.getPlayerEntity();
-                        SkinManager.registerSkinAsync(playerEntity, session, null);
+                        SkinManager.registerJavaSkin(playerEntity, session);
                     } else {
                         playerEntity = session.getEntityCache().getPlayerEntity(entry.getProfile().getId());
                     }

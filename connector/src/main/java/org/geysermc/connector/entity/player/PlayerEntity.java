@@ -347,4 +347,8 @@ public class PlayerEntity extends LivingEntity {
         updateAttributesPacket.setAttributes(attributes);
         session.sendUpstreamPacket(updateAttributesPacket);
     }
+
+    public boolean isSlimByDefault() {
+        return (Math.abs(this.getUuid().hashCode() % 2) == 1);
+    }
 }

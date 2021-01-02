@@ -567,7 +567,7 @@ public class GeyserSession implements CommandSender {
 
                                 // Check if they are not using a linked account
                                 if (isOffline() || isFloodgate()) {
-                                    SkinManager.registerBedrockSkin(playerEntity, GeyserSession.this, null);
+                                    SkinManager.registerBedrockSkin(playerEntity, GeyserSession.this);
                                 }
                             }
 

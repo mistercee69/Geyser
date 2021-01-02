@@ -64,7 +64,7 @@ public class JavaSpawnPlayerTranslator extends PacketTranslator<ServerSpawnPlaye
 
         if (session.getUpstream().isInitialized()) {
             entity.sendPlayer(session);
-            SkinManager.registerSkinAsync(entity, session, null);
+            SkinManager.registerJavaSkin(entity, session);
         }
     }
 }

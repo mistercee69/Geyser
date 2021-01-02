@@ -58,7 +58,7 @@ public class UpstreamPacketHandler extends LoggingPacketHandler {
         if (packet.getUuid().equals(session.getAuthData().getUUID())) {
             BedrockClientData clientData = session.getClientData();
             SerializedSkin skin = packet.getSkin();
-            SkinManager.updateBedrockSkin(session.getPlayerEntity(), session, skin, uuid -> {});
+            SkinManager.updateBedrockSkin(session.getPlayerEntity(), session, skin);
 
             // notify other clients (use geyser uuid)
             packet.setUuid(session.getPlayerEntity().getUuid());

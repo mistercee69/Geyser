@@ -36,8 +36,7 @@ import com.nukkitx.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.connector.entity.player.SkullPlayerEntity;
 import org.geysermc.connector.network.session.GeyserSession;
 import org.geysermc.connector.network.translators.world.block.BlockStateValues;
-import org.geysermc.connector.skin.SkinProvider;
-import org.geysermc.connector.skin.SkullSkinManager;
+import org.geysermc.connector.skin.SkinManager;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -67,12 +66,13 @@ public class SkullBlockEntityTranslator extends BlockEntityTranslator implements
         builder.put("SkullType", skullVariant);
     }
 
-    public static CompletableFuture<GameProfile> getProfile(CompoundTag tag) {
+    private static CompletableFuture<GameProfile> getProfile(CompoundTag tag) {
         if (tag.contains("SkullOwner")) {
             CompoundTag owner = tag.get("SkullOwner");
             CompoundTag properties = owner.get("Properties");
             if (properties == null) {
-                return SkinProvider.requestTexturesFromUsername(owner);
+                UUID uuidForSkullOwner = SkinManager.getUUIDForSkullOwner(owner);
+                return SkinManager.refreshGameProfile(uuidForSkullOwner);
             }
 
             ListTag textures = properties.get("textures");
@@ -152,7 +152,7 @@ public class SkullBlockEntityTranslator extends BlockEntityTranslator implements
             if (session.getUpstream().isInitialized()) {
                 player.spawnEntity(session);
 
-                SkullSkinManager.requestAndHandleSkin(player, session, (skin -> session.getConnector().getGeneralThreadPool().schedule(() -> {
+                SkinManager.registerSkull(player, session, (skin -> session.getConnector().getGeneralThreadPool().schedule(() -> {
                     // Delay to minimize split-second "player" pop-in
                     player.getMetadata().getFlags().setFlag(EntityFlag.INVISIBLE, false);
                     player.updateBedrockMetadata(session);

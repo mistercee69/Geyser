@@ -29,12 +29,14 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import lombok.SneakyThrows;
 import org.geysermc.connector.GeyserConnector;
 import org.reflections.Reflections;
 import org.reflections.serializers.XmlSerializer;
 import org.reflections.util.ConfigurationBuilder;
 
 import java.io.*;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.security.MessageDigest;
@@ -141,6 +143,21 @@ public class FileUtils {
         writeFile(new File(name), data);
     }
 
+
+    /**
+     * Get an InputStream for the given resource path, throws AssertionError if resource is not found
+     *
+     * @param resource Resource to get
+     * @return InputStream of the given resource
+     */
+    @SneakyThrows
+    public static URI getResourceURI(String resource) {
+        URL url = FileUtils.class.getClassLoader().getResource(resource);
+        if (url == null) {
+            throw new AssertionError(LanguageUtils.getLocaleStringLog("geyser.toolbox.fail.resource", resource));
+        }
+        return url.toURI();
+    }
     /**
      * Get an InputStream for the given resource path, throws AssertionError if resource is not found
      *

@@ -28,6 +28,8 @@ package org.geysermc.connector.utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.geysermc.connector.GeyserConnector;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -57,6 +59,26 @@ public class WebUtils {
             return e.getMessage();
         }
     }
+
+    /**
+     * Makes a web request to the given URL and returns the body as an image
+     *
+     * @param reqURL URL to fetch
+     * @return the response as an Image
+     */
+    public static BufferedImage getImage(String reqURL) throws IOException {
+        URL url = null;
+
+            url = new URL(reqURL);
+            HttpURLConnection con = (HttpURLConnection) url.openConnection();
+            con.setRequestMethod("GET");
+            con.setRequestProperty("User-Agent", "Geyser-" + GeyserConnector.getInstance().getPlatformType().toString() + "/" + GeyserConnector.VERSION); // Otherwise Java 8 fails on checking updates
+
+            BufferedImage image = ImageIO.read(con.getInputStream());
+            if (image == null) throw new NullPointerException("Unable to load image data from " + reqURL);
+            return image;
+    }
+
 
     /**
      * Makes a web request to the given URL and returns the body as a {@link JsonNode}.
