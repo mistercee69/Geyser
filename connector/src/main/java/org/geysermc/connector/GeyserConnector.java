@@ -115,9 +115,13 @@ public class GeyserConnector {
         this.bootstrap = bootstrap;
 
         GeyserLogger logger = bootstrap.getGeyserLogger();
+
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> logger.severe("Uncaught Exception in thread '" + t.getName() + "'", e));
+
         GeyserConfiguration config = bootstrap.getGeyserConfig();
 
         this.platformType = platformType;
+
 
         logger.info("******************************************");
         logger.info("");
