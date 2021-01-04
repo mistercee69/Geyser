@@ -15,7 +15,7 @@ public class PlayerSkinProfile implements Resource {
     private final URI resourceUri;
     private final UUID playerId;
     private boolean bedrockSkinLoaded;
-    private ResourceDescriptor<PlayerSkin, ?> skinDescriptor;
+    private ResourceDescriptor<Skin, ?> skinDescriptor;
     private ResourceDescriptor<Cape, ?> capeDescriptor;
     private ResourceDescriptor<SkinGeometry, ?> geometryDescriptor;
 
@@ -36,7 +36,7 @@ public class PlayerSkinProfile implements Resource {
                 .resourceUri(getUriFor(playerEntity))
                 .playerId(playerEntity.getUuid())
                 .bedrockSkinLoaded(false)
-                .skinDescriptor(PlayerSkinType.getDefaultDescriptorFor(playerEntity))
+                .skinDescriptor(SkinType.getDefaultDescriptorFor(playerEntity))
                 .capeDescriptor(CapeType.getDefaultDescriptorFor(playerEntity))
                 .geometryDescriptor(SkinGeometryType.getDefaultDescriptorFor(playerEntity))
                 .build();

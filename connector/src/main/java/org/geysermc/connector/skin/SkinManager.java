@@ -139,19 +139,19 @@ public class SkinManager {
                 logger(session).debug(LanguageUtils.getLocaleStringLog("geyser.skin.bedrock.register",
                         playerEntity.getUsername(), playerEntity.getUuid()));
 
-                final ResourceDescriptor<PlayerSkin, Void> bedrockSkin = PlayerSkinType.BEDROCK_CLIENT_DATA.getDescriptorFor(playerEntity);
+                final ResourceDescriptor<Skin, Void> bedrockSkin = SkinType.BEDROCK_CLIENT_DATA.getDescriptorFor(playerEntity);
                 final ResourceDescriptor<SkinGeometry, Void> bedrockGeom = SkinGeometryType.BEDROCK_CLIENT_DATA.getDescriptorFor(playerEntity);
                 final ResourceDescriptor<Cape, Void> bedrockCape = CapeType.BEDROCK_CLIENT_DATA.getDescriptorFor(playerEntity);
 
                 ResourceManager.loadAsync(force, bedrockSkin, bedrockGeom, bedrockCape)
                         .whenComplete((resultMap, throwable) -> {
                             try {
-                                ResourceDescriptor<PlayerSkin, ?> finalSkin = bedrockSkin;
+                                ResourceDescriptor<Skin, ?> finalSkin = bedrockSkin;
                                 ResourceDescriptor<SkinGeometry, ?> finalGeom = bedrockGeom;
                                 ResourceDescriptor<Cape, ?> finalCape = bedrockCape;
 
                                 if (resultMap.get(bedrockSkin).isFailed()) {
-                                    finalSkin = PlayerSkinType.getDefaultDescriptorFor(playerEntity);
+                                    finalSkin = SkinType.getDefaultDescriptorFor(playerEntity);
                                     ResourceManager.loadAsync(finalSkin).join();
                                 }
 
@@ -200,7 +200,7 @@ public class SkinManager {
                 boolean isBedrock = GeyserConnector.getInstance().getPlayerByUuid(playerEntity.getUuid()) != null;
 
                 final GameProfileSkinParams gameProfileSkinParams = GameProfileSkinParams.of(playerEntity.getProfile());
-                final ResourceDescriptor<PlayerSkin, GameProfileSkinParams> javaSkin = PlayerSkinType.JAVA_GAME_PROFILE.getDescriptorFor(playerEntity, gameProfileSkinParams);
+                final ResourceDescriptor<Skin, GameProfileSkinParams> javaSkin = SkinType.JAVA_GAME_PROFILE.getDescriptorFor(playerEntity, gameProfileSkinParams);
                 final ResourceDescriptor<SkinGeometry, GameProfileSkinParams> javaGeom = SkinGeometryType.JAVA_GAME_PROFILE.getDescriptorFor(playerEntity, gameProfileSkinParams);
                 final ResourceDescriptor<Cape, GameProfileSkinParams> javaCape = CapeType.JAVA_GAME_PROFILE.getDescriptorFor(playerEntity, gameProfileSkinParams);
 
@@ -208,7 +208,7 @@ public class SkinManager {
                         .whenComplete((resultMap, throwable) -> {
                             try {
                                 boolean isEars = false, usingBedrockSkin = false;
-                                ResourceDescriptor<PlayerSkin, ?> finalSkin = javaSkin;
+                                ResourceDescriptor<Skin, ?> finalSkin = javaSkin;
                                 ResourceDescriptor<SkinGeometry, ?> finalGeom = javaGeom;
                                 ResourceDescriptor<Ears, ?> finalEars = EarsType.NONE.getDescriptorFor(playerEntity);
                                 ResourceDescriptor<Cape, ?> finalCape = javaCape;
@@ -216,18 +216,18 @@ public class SkinManager {
                                 // no custom skin was specified
                                 if (resultMap.get(javaSkin).isFailed()) {
                                     if (isBedrock) {
-                                        finalSkin = PlayerSkinType.BEDROCK_CLIENT_DATA.getDescriptorFor(playerEntity);
+                                        finalSkin = SkinType.BEDROCK_CLIENT_DATA.getDescriptorFor(playerEntity);
                                         ResourceLoadResult bedrockSkinResult = ResourceManager.loadAsync(finalSkin).join();
 
                                         if (bedrockSkinResult.isFailed()) {
-                                            finalSkin = PlayerSkinType.getDefaultDescriptorFor(playerEntity);
+                                            finalSkin = SkinType.getDefaultDescriptorFor(playerEntity);
                                             ResourceManager.loadAsync(finalSkin).join();
                                         } else {
                                             usingBedrockSkin = true;
                                         }
                                     } else {
                                         // java player (they are stuck with default skins)
-                                        finalSkin = PlayerSkinType.getDefaultDescriptorFor(playerEntity);
+                                        finalSkin = SkinType.getDefaultDescriptorFor(playerEntity);
                                         ResourceManager.loadAsync(finalSkin).join();
                                     }
                                 }
@@ -277,7 +277,7 @@ public class SkinManager {
                                     ResourceManager.loadAsync(finalGeom).join();
 
                                     // get merged ears
-                                    ResourceDescriptor<PlayerSkin, JavaEarsSkinParams> mergedSkinDescriptor = PlayerSkinType.JAVA_MERGED_EARS
+                                    ResourceDescriptor<Skin, JavaEarsSkinParams> mergedSkinDescriptor = SkinType.JAVA_MERGED_EARS
                                             .getDescriptorFor(playerEntity, JavaEarsSkinParams.of(finalSkin, finalEars));
                                     ResourceLoadResult mergedSkinResult = ResourceManager.loadAsync(mergedSkinDescriptor).join();
                                     if (!mergedSkinResult.isFailed()) {
@@ -495,7 +495,7 @@ public class SkinManager {
     public static PlayerListPacket.Entry buildCachedEntry(GeyserSession session, PlayerEntity playerEntity) {
         PlayerSkinProfile skinProfile = getSkinProfile(playerEntity);
 
-        PlayerSkin skin = ResourceManager.get(skinProfile.getSkinDescriptor());
+        Skin skin = ResourceManager.get(skinProfile.getSkinDescriptor());
         Cape cape = ResourceManager.get(skinProfile.getCapeDescriptor());
         SkinGeometry skinGeometry = ResourceManager.get(skinProfile.getGeometryDescriptor());
 
@@ -511,7 +511,7 @@ public class SkinManager {
     }
 
     private static PlayerListPacket.Entry buildEntryManually(GeyserSession session, UUID uuid, String username, long geyserId,
-                                                             @NonNull PlayerSkin skin, @NonNull Cape cape, @NonNull SkinGeometry geometry) {
+                                                             @NonNull Skin skin, @NonNull Cape cape, @NonNull SkinGeometry geometry) {
 
         List<AnimationData> animations = Collections.emptyList();
         if (skin.getAnimations() != null) {

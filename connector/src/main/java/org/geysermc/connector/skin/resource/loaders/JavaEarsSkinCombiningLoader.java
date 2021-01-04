@@ -14,9 +14,9 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
-public class JavaEarsSkinCombiningLoader implements ResourceLoader<PlayerSkin, JavaEarsSkinParams> {
+public class JavaEarsSkinCombiningLoader implements ResourceLoader<Skin, JavaEarsSkinParams> {
     @Override
-    public CompletableFuture<PlayerSkin> loadAsync(@NonNull ResourceDescriptor<PlayerSkin, JavaEarsSkinParams> descriptor) {
+    public CompletableFuture<Skin> loadAsync(@NonNull ResourceDescriptor<Skin, JavaEarsSkinParams> descriptor) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return getPlayerSkin(descriptor);
@@ -27,7 +27,7 @@ public class JavaEarsSkinCombiningLoader implements ResourceLoader<PlayerSkin, J
     }
 
     @Override
-    public CompletableFuture<PlayerSkin> loadSync(@NonNull ResourceDescriptor<PlayerSkin, JavaEarsSkinParams> descriptor) throws ResourceLoadFailureException {
+    public CompletableFuture<Skin> loadSync(@NonNull ResourceDescriptor<Skin, JavaEarsSkinParams> descriptor) throws ResourceLoadFailureException {
         try {
             return CompletableFuture.completedFuture(getPlayerSkin(descriptor));
         } catch (Throwable e) {
@@ -35,13 +35,13 @@ public class JavaEarsSkinCombiningLoader implements ResourceLoader<PlayerSkin, J
         }
     }
 
-    private PlayerSkin getPlayerSkin(@NonNull ResourceDescriptor<PlayerSkin, JavaEarsSkinParams> descriptor) throws IOException {
-        ResourceDescriptor<PlayerSkin, ?> skinDescriptor = descriptor.getParams().getSkin();
+    private Skin getPlayerSkin(@NonNull ResourceDescriptor<Skin, JavaEarsSkinParams> descriptor) throws IOException {
+        ResourceDescriptor<Skin, ?> skinDescriptor = descriptor.getParams().getSkin();
         ResourceDescriptor<Ears, ?> earsDescriptor = descriptor.getParams().getEars();
-        PlayerSkinType playerSkinType = PlayerSkinType.fromUri(skinDescriptor.getUri());
+        SkinType skinType = SkinType.fromUri(skinDescriptor.getUri());
         EarsType earsType = EarsType.fromUri(earsDescriptor.getUri());
-        if (playerSkinType == PlayerSkinType.JAVA_GAME_PROFILE && earsType != EarsType.NONE && earsType != EarsType.DEADMAU5) {
-            PlayerSkin existingSkin = ResourceManager.get(skinDescriptor);
+        if (skinType == SkinType.JAVA_GAME_PROFILE && earsType != EarsType.NONE && earsType != EarsType.DEADMAU5) {
+            Skin existingSkin = ResourceManager.get(skinDescriptor);
             Ears ears = ResourceManager.get(earsDescriptor);
             try {
                 // Convert the ears data to a BufferedImage
@@ -64,7 +64,7 @@ public class JavaEarsSkinCombiningLoader implements ResourceLoader<PlayerSkin, J
                 skinImage.flush();
 
                 // Create a new skin object with the new information
-                return PlayerSkin.builder()
+                return Skin.builder()
                         .resourceUri(descriptor.getUri())
                         .skinId(existingSkin.getSkinId())
                         .skinData(TextureData.of(data, width, height))

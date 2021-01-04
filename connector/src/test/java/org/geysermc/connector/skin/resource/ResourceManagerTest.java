@@ -75,18 +75,18 @@ public class ResourceManagerTest {
     public void playerSkinMatchers() {
         PlayerEntity playerEntity = new PlayerEntity(new GameProfile(UUID.randomUUID(), "johnsmith"), 1, 1, Vector3f.ZERO, Vector3f.ZERO, Vector3f.ZERO);
 
-        for (PlayerSkinType playerSkinType : PlayerSkinType.values()) {
-            ResourceDescriptor<PlayerSkin, Void> playerSkinDescriptor = playerSkinType.getDescriptorFor(playerEntity);
-            System.out.println("SkinGeometryType: " + playerSkinType + " Descriptor: " + playerSkinDescriptor);
-            Assert.assertTrue("Failed for " + playerSkinType.name(),
-                    playerSkinType.getUriPattern().matcher(playerSkinDescriptor.getUri().toString()).matches());
-            for (PlayerSkinType playerSkinType2 : PlayerSkinType.values()) {
-                if (playerSkinType2 == playerSkinType) {
+        for (SkinType skinType : SkinType.values()) {
+            ResourceDescriptor<Skin, Void> playerSkinDescriptor = skinType.getDescriptorFor(playerEntity);
+            System.out.println("SkinGeometryType: " + skinType + " Descriptor: " + playerSkinDescriptor);
+            Assert.assertTrue("Failed for " + skinType.name(),
+                    skinType.getUriPattern().matcher(playerSkinDescriptor.getUri().toString()).matches());
+            for (SkinType skinType2 : SkinType.values()) {
+                if (skinType2 == skinType) {
                     continue;
                 }
-                ResourceDescriptor<PlayerSkin, Void> playerSkinDescriptor2 = playerSkinType2.getDescriptorFor(playerEntity);
-                Assert.assertFalse("Failed for " + playerSkinType.name() + " vs. " + playerSkinType2.name(),
-                        playerSkinType.getUriPattern().matcher(playerSkinDescriptor2.getUri().toString()).matches());
+                ResourceDescriptor<Skin, Void> playerSkinDescriptor2 = skinType2.getDescriptorFor(playerEntity);
+                Assert.assertFalse("Failed for " + skinType.name() + " vs. " + skinType2.name(),
+                        skinType.getUriPattern().matcher(playerSkinDescriptor2.getUri().toString()).matches());
             }
         }
     }

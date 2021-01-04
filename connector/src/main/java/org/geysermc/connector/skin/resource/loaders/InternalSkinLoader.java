@@ -4,8 +4,8 @@ import lombok.NonNull;
 import org.geysermc.connector.skin.resource.ResourceDescriptor;
 import org.geysermc.connector.skin.resource.ResourceLoadFailureException;
 import org.geysermc.connector.skin.resource.ResourceLoader;
-import org.geysermc.connector.skin.resource.types.PlayerSkin;
-import org.geysermc.connector.skin.resource.types.PlayerSkinType;
+import org.geysermc.connector.skin.resource.types.Skin;
+import org.geysermc.connector.skin.resource.types.SkinType;
 import org.geysermc.connector.skin.resource.types.TextureData;
 import org.geysermc.connector.utils.FileUtils;
 import org.geysermc.connector.utils.SkinUtils;
@@ -16,9 +16,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 
-public class InternalSkinLoader implements ResourceLoader<PlayerSkin, Void> {
+public class InternalSkinLoader implements ResourceLoader<Skin, Void> {
     @Override
-    public CompletableFuture<PlayerSkin> loadAsync(@NonNull ResourceDescriptor<PlayerSkin, Void> descriptor) {
+    public CompletableFuture<Skin> loadAsync(@NonNull ResourceDescriptor<Skin, Void> descriptor) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return getPlayerSkin(descriptor.getUri());
@@ -29,7 +29,7 @@ public class InternalSkinLoader implements ResourceLoader<PlayerSkin, Void> {
     }
 
     @Override
-    public CompletableFuture<PlayerSkin> loadSync(@NonNull ResourceDescriptor<PlayerSkin, Void> descriptor) throws ResourceLoadFailureException {
+    public CompletableFuture<Skin> loadSync(@NonNull ResourceDescriptor<Skin, Void> descriptor) throws ResourceLoadFailureException {
         try {
             return CompletableFuture.completedFuture(getPlayerSkin(descriptor.getUri()));
         } catch (Throwable e) {
@@ -37,12 +37,12 @@ public class InternalSkinLoader implements ResourceLoader<PlayerSkin, Void> {
         }
     }
 
-    private PlayerSkin getPlayerSkin(URI skinUri) throws IOException {
-        PlayerSkinType skinType = PlayerSkinType.fromUri(skinUri);
+    private Skin getPlayerSkin(URI skinUri) throws IOException {
+        SkinType skinType = SkinType.fromUri(skinUri);
         String skinId = skinUri.toString();
-        if (skinType == PlayerSkinType.DEFAULT_ALEX) {
+        if (skinType == SkinType.DEFAULT_ALEX) {
             skinId = "alex";
-        } else if (skinType == PlayerSkinType.DEFAULT_STEVE) {
+        } else if (skinType == SkinType.DEFAULT_STEVE) {
             skinId = "steve";
         }
 
@@ -53,7 +53,7 @@ public class InternalSkinLoader implements ResourceLoader<PlayerSkin, Void> {
         int height = skinImage.getHeight();
         skinImage.flush();
 
-        return PlayerSkin.builder()
+        return Skin.builder()
                 .resourceUri(skinUri)
                 .skinId(skinId)
                 .skinData(TextureData.of(

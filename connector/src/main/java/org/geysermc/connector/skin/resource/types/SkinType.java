@@ -15,7 +15,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 @Getter
-public enum PlayerSkinType {
+public enum SkinType {
     DEFAULT_STEVE(
             "skin:bedrock/skin/skin_steve.png",
             "^skin:bedrock/skin/skin_steve.png$",
@@ -47,7 +47,7 @@ public enum PlayerSkinType {
     private final TextureIdUriType idUriType;
     private final Class<? extends ResourceLoader<?, ?>> loader;
 
-    PlayerSkinType(@NonNull String uriTemplate, @NonNull String uriRegex, @NonNull TextureIdUriType idUriType, @NonNull Class<? extends ResourceLoader<?, ?>> loader) {
+    SkinType(@NonNull String uriTemplate, @NonNull String uriRegex, @NonNull TextureIdUriType idUriType, @NonNull Class<? extends ResourceLoader<?, ?>> loader) {
         this.uriTemplate = uriTemplate;
         this.uriPattern = Pattern.compile(uriRegex);
         this.idUriType = idUriType;
@@ -75,23 +75,23 @@ public enum PlayerSkinType {
         }
     }
 
-    public static PlayerSkinType fromUri(@NonNull URI uri) {
-        for (PlayerSkinType value : PlayerSkinType.values()) {
+    public static SkinType fromUri(@NonNull URI uri) {
+        for (SkinType value : SkinType.values()) {
             if (value.matches(uri))
                 return value;
         }
         throw new IllegalArgumentException("Unable to map uri (" + uri.toString() + ") to player skin type");
     }
 
-    public ResourceDescriptor<PlayerSkin, Void> getDescriptorFor(@NonNull PlayerEntity playerEntity) {
-        return ResourceDescriptor.of(getUriFor(playerEntity), PlayerSkin.class);
+    public ResourceDescriptor<Skin, Void> getDescriptorFor(@NonNull PlayerEntity playerEntity) {
+        return ResourceDescriptor.of(getUriFor(playerEntity), Skin.class);
     }
 
-    public <P> ResourceDescriptor<PlayerSkin, P> getDescriptorFor(@NonNull PlayerEntity playerEntity, P params) {
-        return ResourceDescriptor.of(getUriFor(playerEntity), PlayerSkin.class, params);
+    public <P> ResourceDescriptor<Skin, P> getDescriptorFor(@NonNull PlayerEntity playerEntity, P params) {
+        return ResourceDescriptor.of(getUriFor(playerEntity), Skin.class, params);
     }
 
-    public static ResourceDescriptor<PlayerSkin, Void> getDefaultDescriptorFor(@NonNull PlayerEntity playerEntity) {
-        return ResourceDescriptor.of(playerEntity.isSlim() ? DEFAULT_ALEX.getUriFor(playerEntity) : DEFAULT_STEVE.getUriFor(playerEntity), PlayerSkin.class);
+    public static ResourceDescriptor<Skin, Void> getDefaultDescriptorFor(@NonNull PlayerEntity playerEntity) {
+        return ResourceDescriptor.of(playerEntity.isSlim() ? DEFAULT_ALEX.getUriFor(playerEntity) : DEFAULT_STEVE.getUriFor(playerEntity), Skin.class);
     }
 }

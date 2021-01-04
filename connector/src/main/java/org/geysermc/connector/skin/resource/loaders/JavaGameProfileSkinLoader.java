@@ -8,7 +8,7 @@ import org.geysermc.connector.network.session.GeyserSession;
 import org.geysermc.connector.skin.resource.ResourceDescriptor;
 import org.geysermc.connector.skin.resource.ResourceLoadFailureException;
 import org.geysermc.connector.skin.resource.ResourceLoader;
-import org.geysermc.connector.skin.resource.types.PlayerSkin;
+import org.geysermc.connector.skin.resource.types.Skin;
 import org.geysermc.connector.skin.resource.types.TextureData;
 import org.geysermc.connector.utils.SkinUtils;
 import org.geysermc.connector.utils.WebUtils;
@@ -23,12 +23,12 @@ import java.util.concurrent.CompletableFuture;
 import static com.github.steveice10.mc.auth.data.GameProfile.Texture;
 import static com.github.steveice10.mc.auth.data.GameProfile.TextureType;
 
-public class JavaGameProfileSkinLoader implements ResourceLoader<PlayerSkin, GameProfileSkinParams> {
+public class JavaGameProfileSkinLoader implements ResourceLoader<Skin, GameProfileSkinParams> {
 
     // URI form javaClientSkin:UUID
 
     @Override
-    public CompletableFuture<PlayerSkin> loadAsync(@NonNull ResourceDescriptor<PlayerSkin, GameProfileSkinParams> descriptor) {
+    public CompletableFuture<Skin> loadAsync(@NonNull ResourceDescriptor<Skin, GameProfileSkinParams> descriptor) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return getPlayerSkin(descriptor);
@@ -39,7 +39,7 @@ public class JavaGameProfileSkinLoader implements ResourceLoader<PlayerSkin, Gam
     }
 
     @Override
-    public CompletableFuture<PlayerSkin> loadSync(@NonNull ResourceDescriptor<PlayerSkin, GameProfileSkinParams> descriptor) throws ResourceLoadFailureException {
+    public CompletableFuture<Skin> loadSync(@NonNull ResourceDescriptor<Skin, GameProfileSkinParams> descriptor) throws ResourceLoadFailureException {
         try {
             return CompletableFuture.completedFuture(getPlayerSkin(descriptor));
         } catch (Throwable e) {
@@ -47,7 +47,7 @@ public class JavaGameProfileSkinLoader implements ResourceLoader<PlayerSkin, Gam
         }
     }
 
-    private PlayerSkin getPlayerSkin(ResourceDescriptor<PlayerSkin, GameProfileSkinParams> descriptor) throws IOException, PropertyException {
+    private Skin getPlayerSkin(ResourceDescriptor<Skin, GameProfileSkinParams> descriptor) throws IOException, PropertyException {
         GameProfile gameProfile = getGameProfile(descriptor);
         Map<TextureType, Texture> textures = gameProfile.getTextures(false);
 
@@ -55,7 +55,7 @@ public class JavaGameProfileSkinLoader implements ResourceLoader<PlayerSkin, Gam
             URI skinUri = getSkinUri(textures);
             BufferedImage skinImage = WebUtils.getImage(skinUri.toString());
 
-            return PlayerSkin.builder()
+            return Skin.builder()
                     .resourceUri(descriptor.getUri())
                     .skinId(skinUri.toString())
                     .skinData(TextureData.of(
@@ -71,7 +71,7 @@ public class JavaGameProfileSkinLoader implements ResourceLoader<PlayerSkin, Gam
         return UUID.fromString(uri.getSchemeSpecificPart());
     }
 
-    private GameProfile getGameProfile(@NonNull ResourceDescriptor<PlayerSkin, GameProfileSkinParams> descriptor) {
+    private GameProfile getGameProfile(@NonNull ResourceDescriptor<Skin, GameProfileSkinParams> descriptor) {
         if (descriptor.getParams().getGameProfile() != null) {
             return descriptor.getParams().getGameProfile();
         }

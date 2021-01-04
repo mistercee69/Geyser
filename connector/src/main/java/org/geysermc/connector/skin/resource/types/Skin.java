@@ -10,7 +10,7 @@ import java.util.List;
 
 @Data
 @Builder
-public class PlayerSkin implements Resource {
+public class Skin implements Resource {
     private final URI resourceUri;
     private final String skinId;
     private final TextureData skinData;

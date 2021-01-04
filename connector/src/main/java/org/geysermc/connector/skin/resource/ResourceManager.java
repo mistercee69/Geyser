@@ -32,8 +32,8 @@ public class ResourceManager {
         // LinkedHashMap sorts entries by insertion order (used for pattern matching precedence)
 
         // skins
-        for (PlayerSkinType skinType : PlayerSkinType.values()) {
-            registerLoader(PlayerSkin.class, skinType.getUriPattern(), instantiateLoader(skinType.getLoader()));
+        for (SkinType skinType : SkinType.values()) {
+            registerLoader(Skin.class, skinType.getUriPattern(), instantiateLoader(skinType.getLoader()));
         }
 
         // geometry

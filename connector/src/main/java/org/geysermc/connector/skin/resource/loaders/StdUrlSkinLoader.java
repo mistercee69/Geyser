@@ -4,7 +4,7 @@ import lombok.NonNull;
 import org.geysermc.connector.skin.resource.ResourceDescriptor;
 import org.geysermc.connector.skin.resource.ResourceLoadFailureException;
 import org.geysermc.connector.skin.resource.ResourceLoader;
-import org.geysermc.connector.skin.resource.types.PlayerSkin;
+import org.geysermc.connector.skin.resource.types.Skin;
 import org.geysermc.connector.skin.resource.types.TextureData;
 import org.geysermc.connector.utils.SkinUtils;
 import org.geysermc.connector.utils.WebUtils;
@@ -14,9 +14,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 
-public class StdUrlSkinLoader implements ResourceLoader<PlayerSkin, Void> {
+public class StdUrlSkinLoader implements ResourceLoader<Skin, Void> {
     @Override
-    public CompletableFuture<PlayerSkin> loadAsync(@NonNull ResourceDescriptor<PlayerSkin, Void> descriptor) {
+    public CompletableFuture<Skin> loadAsync(@NonNull ResourceDescriptor<Skin, Void> descriptor) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return getPlayerSkin(descriptor.getUri());
@@ -27,7 +27,7 @@ public class StdUrlSkinLoader implements ResourceLoader<PlayerSkin, Void> {
     }
 
     @Override
-    public CompletableFuture<PlayerSkin> loadSync(@NonNull ResourceDescriptor<PlayerSkin, Void> descriptor) throws ResourceLoadFailureException {
+    public CompletableFuture<Skin> loadSync(@NonNull ResourceDescriptor<Skin, Void> descriptor) throws ResourceLoadFailureException {
         try {
             return CompletableFuture.completedFuture(getPlayerSkin(descriptor.getUri()));
         } catch (Throwable e) {
@@ -35,12 +35,12 @@ public class StdUrlSkinLoader implements ResourceLoader<PlayerSkin, Void> {
         }
     }
 
-    private PlayerSkin getPlayerSkin(URI skinUri) throws IOException {
+    private Skin getPlayerSkin(URI skinUri) throws IOException {
         String skinUrl = skinUri.toURL().toString();
         BufferedImage skinImage = WebUtils.getImage(skinUrl);
         skinImage.flush();
 
-        return PlayerSkin.builder()
+        return Skin.builder()
                 .resourceUri(skinUri)
                 .skinData(TextureData.of(
                         SkinUtils.bufferedImageToImageData(skinImage),

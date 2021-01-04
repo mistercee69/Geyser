@@ -7,7 +7,7 @@ import org.geysermc.connector.network.session.auth.BedrockClientData;
 import org.geysermc.connector.skin.resource.ResourceDescriptor;
 import org.geysermc.connector.skin.resource.ResourceLoadFailureException;
 import org.geysermc.connector.skin.resource.ResourceLoader;
-import org.geysermc.connector.skin.resource.types.PlayerSkin;
+import org.geysermc.connector.skin.resource.types.Skin;
 import org.geysermc.connector.skin.resource.types.TextureData;
 import org.geysermc.connector.utils.LanguageUtils;
 import org.geysermc.connector.utils.UUIDUtils;
@@ -16,13 +16,13 @@ import java.net.URI;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-public class BedrockClientDataSkinLoader implements ResourceLoader<PlayerSkin, Void> {
+public class BedrockClientDataSkinLoader implements ResourceLoader<Skin, Void> {
     public static final boolean ALLOW_BEDROCK_CHARACTER_CREATOR_SKINS = GeyserConnector.getInstance().getConfig().isAllowBedrockCharacterCreatorSkins();
 
     // URI form bedrockClientSkin:UUID
 
     @Override
-    public CompletableFuture<PlayerSkin> loadAsync(@NonNull ResourceDescriptor<PlayerSkin, Void> descriptor) {
+    public CompletableFuture<Skin> loadAsync(@NonNull ResourceDescriptor<Skin, Void> descriptor) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return getPlayerSkin(descriptor.getUri());
@@ -33,7 +33,7 @@ public class BedrockClientDataSkinLoader implements ResourceLoader<PlayerSkin, V
     }
 
     @Override
-    public CompletableFuture<PlayerSkin> loadSync(@NonNull ResourceDescriptor<PlayerSkin, Void> descriptor) throws ResourceLoadFailureException {
+    public CompletableFuture<Skin> loadSync(@NonNull ResourceDescriptor<Skin, Void> descriptor) throws ResourceLoadFailureException {
         try {
             return CompletableFuture.completedFuture(getPlayerSkin(descriptor.getUri()));
         } catch (Throwable e) {
@@ -41,7 +41,7 @@ public class BedrockClientDataSkinLoader implements ResourceLoader<PlayerSkin, V
         }
     }
 
-    private PlayerSkin getPlayerSkin(URI uri) {
+    private Skin getPlayerSkin(URI uri) {
         UUID playerUuid = UUID.fromString(UUIDUtils.toDashedUUID(uri.getSchemeSpecificPart()));
         GeyserSession session = GeyserConnector.getInstance().getPlayerByUuid(playerUuid);
         BedrockClientData clientData = session.getClientData();
@@ -57,7 +57,7 @@ public class BedrockClientDataSkinLoader implements ResourceLoader<PlayerSkin, V
             }
         }
 
-        PlayerSkin.PlayerSkinBuilder skinBuilder = PlayerSkin.builder();
+        Skin.SkinBuilder skinBuilder = Skin.builder();
         skinBuilder
                 .resourceUri(uri)
                 .skinId(clientData.getSkinId())
