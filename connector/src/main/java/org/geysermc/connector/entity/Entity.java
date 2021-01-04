@@ -63,7 +63,15 @@ import java.util.Map;
 @Getter
 @Setter
 public class Entity {
+    /**
+     * Entity id reported by Java Edition server.
+     * Globally unique across Geyser sessions
+     */
     protected long entityId;
+    /**
+     * Entity id sent to Bedrock clients
+     * Not globally unique across Geyser sessions
+     */
     protected long geyserId;
 
     protected Vector3f position;
