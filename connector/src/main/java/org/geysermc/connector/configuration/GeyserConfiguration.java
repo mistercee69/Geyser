@@ -145,6 +145,8 @@ public interface GeyserConfiguration {
 
     int getConfigVersion();
 
+    boolean isAllowBedrockCharacterCreatorSkins();
+
     static void checkGeyserConfiguration(GeyserConfiguration geyserConfig, GeyserLogger geyserLogger) {
         if (geyserConfig.getConfigVersion() < CURRENT_CONFIG_VERSION) {
             geyserLogger.warning(LanguageUtils.getLocaleStringLog("geyser.bootstrap.config.outdated"));

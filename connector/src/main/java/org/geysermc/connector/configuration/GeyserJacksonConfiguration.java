@@ -184,4 +184,8 @@ public abstract class GeyserJacksonConfiguration implements GeyserConfiguration 
 
     @JsonProperty("config-version")
     private int configVersion = 0;
+
+    @JsonProperty("allow-bedrock-character-creator-skins")
+    private boolean allowBedrockCharacterCreatorSkins;
+
 }
