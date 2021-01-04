@@ -92,6 +92,6 @@ public enum PlayerSkinType {
     }
 
     public static ResourceDescriptor<PlayerSkin, Void> getDefaultDescriptorFor(@NonNull PlayerEntity playerEntity) {
-        return ResourceDescriptor.of(playerEntity.isSlimByDefault() ? DEFAULT_ALEX.getUriFor(playerEntity) : DEFAULT_STEVE.getUriFor(playerEntity), PlayerSkin.class);
+        return ResourceDescriptor.of(playerEntity.isSlim() ? DEFAULT_ALEX.getUriFor(playerEntity) : DEFAULT_STEVE.getUriFor(playerEntity), PlayerSkin.class);
     }
 }

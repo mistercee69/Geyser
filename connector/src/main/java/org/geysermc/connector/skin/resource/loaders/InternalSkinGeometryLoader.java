@@ -21,8 +21,7 @@ public class InternalSkinGeometryLoader implements ResourceLoader<SkinGeometry, 
             try {
                 return getGeometry(descriptor.getUri());
             } catch (Throwable e) {
-                e.printStackTrace();
-                throw new ResourceLoadFailureException(e);
+                throw ResourceLoadFailureException.getOrWrapException(e);
             }
         });
     }
@@ -32,31 +31,29 @@ public class InternalSkinGeometryLoader implements ResourceLoader<SkinGeometry, 
         try {
             return CompletableFuture.completedFuture(getGeometry(descriptor.getUri()));
         } catch (Throwable e) {
-            e.printStackTrace();
-            return CompletableFuture.supplyAsync(() -> { throw new ResourceLoadFailureException(e); });
-        }
-    }
 
-    private String jsonName(@NonNull String geometryName) {
-        return "{\"geometry\" :{\"default\" :\"" + geometryName + "\"}}";
+            return CompletableFuture.supplyAsync(() -> { throw ResourceLoadFailureException.getOrWrapException(e); });
+        }
     }
 
     private SkinGeometry getGeometry(@NonNull URI uri) {
         SkinGeometryType skinGeometryTypes = SkinGeometryType.fromUri(uri);
         if (skinGeometryTypes != null) {
             String geometryName = uri.getSchemeSpecificPart();
-            String jsonName = jsonName(geometryName);
             switch (skinGeometryTypes) {
                 case LEGACY:
                 case LEGACY_SLIM:
                     return SkinGeometry.builder()
-                            .name(jsonName)
+                            .resourceUri(uri)
+                            .name(geometryName)
+                            .data("")
                             .build();
                 case EARS:
                 case EARS_SLIM:
                 case CUSTOM_SKULL:
                     return SkinGeometry.builder()
-                            .name(jsonName)
+                            .resourceUri(uri)
+                            .name(geometryName)
                             .data(new String(FileUtils.readAllBytes(FileUtils.getResource("bedrock/skin/"+geometryName+".json")), StandardCharsets.UTF_8))
                             .build();
             }

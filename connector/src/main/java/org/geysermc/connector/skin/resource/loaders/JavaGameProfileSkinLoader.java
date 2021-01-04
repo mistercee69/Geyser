@@ -33,8 +33,7 @@ public class JavaGameProfileSkinLoader implements ResourceLoader<PlayerSkin, Gam
             try {
                 return getPlayerSkin(descriptor);
             } catch (Throwable e) {
-                e.printStackTrace();
-                throw new ResourceLoadFailureException(e);
+                throw ResourceLoadFailureException.getOrWrapException(e);
             }
         });
     }
@@ -44,8 +43,7 @@ public class JavaGameProfileSkinLoader implements ResourceLoader<PlayerSkin, Gam
         try {
             return CompletableFuture.completedFuture(getPlayerSkin(descriptor));
         } catch (Throwable e) {
-            e.printStackTrace();
-            return CompletableFuture.supplyAsync(() -> { throw new ResourceLoadFailureException(e); });
+            return CompletableFuture.supplyAsync(() -> { throw ResourceLoadFailureException.getOrWrapException(e); });
         }
     }
 

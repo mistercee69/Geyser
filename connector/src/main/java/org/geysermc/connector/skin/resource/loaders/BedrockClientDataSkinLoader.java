@@ -9,17 +9,15 @@ import org.geysermc.connector.skin.resource.ResourceLoadFailureException;
 import org.geysermc.connector.skin.resource.ResourceLoader;
 import org.geysermc.connector.skin.resource.types.PlayerSkin;
 import org.geysermc.connector.skin.resource.types.TextureData;
+import org.geysermc.connector.utils.LanguageUtils;
 import org.geysermc.connector.utils.UUIDUtils;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-import static org.geysermc.connector.skin.resource.types.PlayerSkin.*;
-
-
 public class BedrockClientDataSkinLoader implements ResourceLoader<PlayerSkin, Void> {
+    public static final boolean ALLOW_BEDROCK_CHARACTER_CREATOR_SKINS = GeyserConnector.getInstance().getConfig().isAllowBedrockCharacterCreatorSkins();
 
     // URI form bedrockClientSkin:UUID
 
@@ -29,8 +27,7 @@ public class BedrockClientDataSkinLoader implements ResourceLoader<PlayerSkin, V
             try {
                 return getPlayerSkin(descriptor.getUri());
             } catch (Throwable e) {
-                e.printStackTrace();
-                throw new ResourceLoadFailureException(e);
+                throw ResourceLoadFailureException.getOrWrapException(e);
             }
         });
     }
@@ -40,26 +37,37 @@ public class BedrockClientDataSkinLoader implements ResourceLoader<PlayerSkin, V
         try {
             return CompletableFuture.completedFuture(getPlayerSkin(descriptor.getUri()));
         } catch (Throwable e) {
-            e.printStackTrace();
-            return CompletableFuture.supplyAsync(() -> { throw new ResourceLoadFailureException(e); });
+            return CompletableFuture.supplyAsync(() -> { throw ResourceLoadFailureException.getOrWrapException(e); });
         }
     }
 
-    private PlayerSkin getPlayerSkin(URI uri) throws IOException {
+    private PlayerSkin getPlayerSkin(URI uri) {
         UUID playerUuid = UUID.fromString(UUIDUtils.toDashedUUID(uri.getSchemeSpecificPart()));
         GeyserSession session = GeyserConnector.getInstance().getPlayerByUuid(playerUuid);
         BedrockClientData clientData = session.getClientData();
 
-        PlayerSkinBuilder skinBuilder = builder();
+        if (GeyserConnector.getInstance().getLogger().isDebug()) {
+            GeyserConnector.getInstance().getLogger().debug("[Skin Info] id: " + clientData.getSkinId() + " width: " + clientData.getSkinImageWidth() + " height: " + clientData.getSkinImageHeight() +
+                    " isPersona: " + clientData.isPersonaSkin() + " isPremium: " + clientData.isPremiumSkin() + " isCapeOnClassic: " + clientData.isCapeOnClassicSkin());
+        }
+
+        if (!ALLOW_BEDROCK_CHARACTER_CREATOR_SKINS) {
+            if (clientData.getSkinData().length > (128 * 128 * 4) || clientData.isPersonaSkin())   {
+                throw new ResourceLoadFailureException(LanguageUtils.getLocaleStringLog("geyser.skin.bedrock.fail", playerUuid));
+            }
+        }
+
+        PlayerSkin.PlayerSkinBuilder skinBuilder = PlayerSkin.builder();
         skinBuilder
                 .resourceUri(uri)
                 .skinId(clientData.getSkinId())
                 .skinData(TextureData.of(
                         clientData.getSkinData(),
                         clientData.getSkinImageWidth(),
-                        clientData.getSkinImageHeight()));
+                        clientData.getSkinImageHeight()))
+                .capeOnClassic(clientData.isCapeOnClassicSkin());
 
-        if (true /*configOption*/) {
+        if (ALLOW_BEDROCK_CHARACTER_CREATOR_SKINS) {
             if (clientData.getAnimations() != null) {
                 skinBuilder.animations(clientData.getAnimations());
             }
@@ -67,7 +75,6 @@ public class BedrockClientDataSkinLoader implements ResourceLoader<PlayerSkin, V
                     .animationData(clientData.getSkinAnimationData())
                     .premium(clientData.isPremiumSkin())
                     .persona(clientData.isPersonaSkin())
-                    .capeOnClassic(clientData.isCapeOnClassicSkin())
                     .armSize(clientData.getArmSize())
                     .skinColor(clientData.getSkinColor());
 

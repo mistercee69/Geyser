@@ -30,7 +30,7 @@ public class JavaGameProfileGeometryLoader  implements ResourceLoader<SkinGeomet
                 return internalLoader.loadAsync(internalDescriptor);
             }
         } catch (Throwable e) {
-            return CompletableFuture.supplyAsync(() -> { throw new ResourceLoadFailureException(e); });
+            return CompletableFuture.supplyAsync(() -> { throw ResourceLoadFailureException.getOrWrapException(e); });
         }
         return CompletableFuture.supplyAsync(() -> { throw new ResourceLoadFailureException("Game profile is missing skin uri"); });
     }
@@ -43,7 +43,7 @@ public class JavaGameProfileGeometryLoader  implements ResourceLoader<SkinGeomet
                 return internalLoader.loadSync(internalDescriptor);
             }
         } catch (Throwable e) {
-            return CompletableFuture.supplyAsync(() -> { throw new ResourceLoadFailureException(e); });
+            return CompletableFuture.supplyAsync(() -> { throw ResourceLoadFailureException.getOrWrapException(e); });
         }
         return CompletableFuture.supplyAsync(() -> { throw new ResourceLoadFailureException("Game profile is missing skin uri"); });
     }

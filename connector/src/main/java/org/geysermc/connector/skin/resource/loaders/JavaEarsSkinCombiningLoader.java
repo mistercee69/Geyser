@@ -21,8 +21,7 @@ public class JavaEarsSkinCombiningLoader implements ResourceLoader<PlayerSkin, J
             try {
                 return getPlayerSkin(descriptor);
             } catch (Throwable e) {
-                e.printStackTrace();
-                throw new ResourceLoadFailureException(e);
+                throw ResourceLoadFailureException.getOrWrapException(e);
             }
         });
     }
@@ -32,8 +31,7 @@ public class JavaEarsSkinCombiningLoader implements ResourceLoader<PlayerSkin, J
         try {
             return CompletableFuture.completedFuture(getPlayerSkin(descriptor));
         } catch (Throwable e) {
-            e.printStackTrace();
-            return CompletableFuture.supplyAsync(() -> { throw new ResourceLoadFailureException(e); });
+            return CompletableFuture.supplyAsync(() -> { throw ResourceLoadFailureException.getOrWrapException(e); });
         }
     }
 
@@ -72,7 +70,7 @@ public class JavaEarsSkinCombiningLoader implements ResourceLoader<PlayerSkin, J
                         .skinData(TextureData.of(data, width, height))
                         .build();
             } catch (Exception e) {
-                e.printStackTrace();
+                throw new ResourceLoadFailureException("Unable to load ear skin", e);
             } // just ignore I guess
         }
 

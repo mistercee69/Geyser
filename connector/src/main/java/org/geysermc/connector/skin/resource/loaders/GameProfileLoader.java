@@ -24,8 +24,7 @@ public class GameProfileLoader implements ResourceLoader<GameProfileData, Void> 
             try {
                 return getGameProfileData(descriptor.getUri());
             } catch (Throwable e) {
-                e.printStackTrace();
-                throw new ResourceLoadFailureException(e);
+                throw ResourceLoadFailureException.getOrWrapException(e);
             }
         });
     }
@@ -35,8 +34,7 @@ public class GameProfileLoader implements ResourceLoader<GameProfileData, Void> 
         try {
             return CompletableFuture.completedFuture(getGameProfileData(descriptor.getUri()));
         } catch (Throwable e) {
-            e.printStackTrace();
-            return CompletableFuture.supplyAsync(() -> { throw new ResourceLoadFailureException(e); });
+            return CompletableFuture.supplyAsync(() -> { throw ResourceLoadFailureException.getOrWrapException(e); });
         }
     }
 

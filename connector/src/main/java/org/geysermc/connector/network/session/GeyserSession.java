@@ -818,15 +818,6 @@ public class GeyserSession implements CommandSender {
         }
     }
 
-    public void broadcastUpstreamPacket(BedrockPacket packet) {
-        for (GeyserSession session : GeyserConnector.getInstance().getPlayers()) {
-            if (session != this && session.getUpstream().isInitialized()) {
-                session.sendUpstreamPacket(packet);
-            }
-        }
-    }
-
-
     /**
      * Send a packet immediately to the player.
      *
@@ -850,6 +841,14 @@ public class GeyserSession implements CommandSender {
             downstream.getSession().send(packet);
         } else {
             connector.getLogger().debug("Tried to send downstream packet " + packet.getClass().getSimpleName() + " before connected to the server");
+        }
+    }
+
+    public void broadcastUpstreamPacket(BedrockPacket packet) {
+        for (GeyserSession session : GeyserConnector.getInstance().getPlayers()) {
+            if (session != this && session.getUpstream().isInitialized()) {
+                session.sendUpstreamPacket(packet);
+            }
         }
     }
 
@@ -886,12 +885,9 @@ public class GeyserSession implements CommandSender {
         return connector.getWorldManager().hasPermission(this, permission);
     }
 
-    /**
-     * Send an AdventureSettingsPacket to the client with the latest flags
-     */
-    public void sendAdventureSettings() {
+    public AdventureSettingsPacket getAdventureSettings(long geyserId) {
         AdventureSettingsPacket adventureSettingsPacket = new AdventureSettingsPacket();
-        adventureSettingsPacket.setUniqueEntityId(playerEntity.getGeyserId());
+        adventureSettingsPacket.setUniqueEntityId(geyserId);
         // Set command permission if OP permission level is high enough
         // This allows mobile players access to a GUI for doing commands. The commands there do not change above OPERATOR
         // and all commands there are accessible with OP permission level 2
@@ -923,7 +919,15 @@ public class GeyserSession implements CommandSender {
         flags.add(AdventureSetting.AUTO_JUMP);
 
         adventureSettingsPacket.getSettings().addAll(flags);
-        sendUpstreamPacket(adventureSettingsPacket);
+
+        return adventureSettingsPacket;
+    }
+
+    /**
+     * Send an AdventureSettingsPacket to the client with the latest flags
+     */
+    public void sendAdventureSettings() {
+        sendUpstreamPacket(getAdventureSettings(playerEntity.getGeyserId()));
     }
 
     /**

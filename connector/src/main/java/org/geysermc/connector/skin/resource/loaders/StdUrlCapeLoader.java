@@ -24,8 +24,7 @@ public class StdUrlCapeLoader implements ResourceLoader<Cape, Void> {
                 String capeId = capeType.getCapeIdFor(descriptor.getUri());
                 return getCape(descriptor.getUri(), capeId);
             } catch (Throwable e) {
-                e.printStackTrace();
-                throw new ResourceLoadFailureException(e);
+                throw ResourceLoadFailureException.getOrWrapException(e);
             }
         });
     }
@@ -37,8 +36,7 @@ public class StdUrlCapeLoader implements ResourceLoader<Cape, Void> {
             String capeId = capeType.getCapeIdFor(descriptor.getUri());
             return CompletableFuture.completedFuture(getCape(descriptor.getUri(), capeId));
         } catch (Throwable e) {
-            e.printStackTrace();
-            return CompletableFuture.supplyAsync(() -> { throw new ResourceLoadFailureException(e); });
+            return CompletableFuture.supplyAsync(() -> { throw ResourceLoadFailureException.getOrWrapException(e); });
         }
     }
 

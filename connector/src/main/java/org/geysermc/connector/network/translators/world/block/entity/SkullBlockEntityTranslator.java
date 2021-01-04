@@ -69,9 +69,11 @@ public class SkullBlockEntityTranslator extends BlockEntityTranslator implements
     private static CompletableFuture<GameProfile> getProfile(CompoundTag tag) {
         if (tag.contains("SkullOwner")) {
             CompoundTag owner = tag.get("SkullOwner");
+            String username = owner.get("Name").getValue().toString();
+            UUID uuidForSkullOwner = SkinManager.getUUIDForSkullOwner(owner);
+
             CompoundTag properties = owner.get("Properties");
             if (properties == null) {
-                UUID uuidForSkullOwner = SkinManager.getUUIDForSkullOwner(owner);
                 return SkinManager.refreshGameProfile(uuidForSkullOwner);
             }
 
@@ -81,7 +83,7 @@ public class SkullBlockEntityTranslator extends BlockEntityTranslator implements
 
             List<GameProfile.Property> profileProperties = new ArrayList<>();
 
-            GameProfile gameProfile = new GameProfile(UUID.randomUUID(), "");
+            GameProfile gameProfile = new GameProfile(uuidForSkullOwner, username);
             profileProperties.add(new GameProfile.Property("textures", texture.getValue()));
             gameProfile.setProperties(profileProperties);
             return CompletableFuture.completedFuture(gameProfile);
@@ -135,6 +137,11 @@ public class SkullBlockEntityTranslator extends BlockEntityTranslator implements
                 session.getConnector().getLogger().debug("Custom skull with invalid SkullOwner tag: " + blockPosition.toString() + " " + tag.toString());
                 return;
             }
+
+            // override uuid and username
+            GameProfile skullProfile = new GameProfile(UUID.randomUUID(), "");
+            skullProfile.setProperties(gameProfile.getProperties());
+            gameProfile = skullProfile;
 
             SkullPlayerEntity existingSkull = session.getSkullCache().get(blockPosition);
             if (existingSkull != null) {

@@ -11,12 +11,12 @@ import org.geysermc.connector.skin.resource.types.Cape;
 import org.geysermc.connector.skin.resource.types.TextureData;
 import org.geysermc.connector.utils.UUIDUtils;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 public class BedrockClientDataCapeLoader implements ResourceLoader<Cape, Void> {
+    public static final boolean ALLOW_BEDROCK_CHARACTER_CREATOR_SKINS = GeyserConnector.getInstance().getConfig().isAllowBedrockCharacterCreatorSkins();
 
     // URI form bedrockClientCape:UUID
 
@@ -26,9 +26,7 @@ public class BedrockClientDataCapeLoader implements ResourceLoader<Cape, Void> {
             try {
                 return getCape(descriptor.getUri());
             } catch (Throwable e) {
-                e.printStackTrace();
-                GeyserConnector.getInstance().getLogger().debug("Problem getting cape: " + e.getMessage());
-                throw new ResourceLoadFailureException(e);
+                throw ResourceLoadFailureException.getOrWrapException(e);
             }
         });
     }
@@ -38,16 +36,18 @@ public class BedrockClientDataCapeLoader implements ResourceLoader<Cape, Void> {
         try {
             return CompletableFuture.completedFuture(getCape(descriptor.getUri()));
         } catch (Throwable e) {
-            e.printStackTrace();
-            GeyserConnector.getInstance().getLogger().debug("Problem getting cape: " + e.getMessage());
-            return CompletableFuture.supplyAsync(() -> { throw new ResourceLoadFailureException(e); });
+            return CompletableFuture.supplyAsync(() -> { throw ResourceLoadFailureException.getOrWrapException(e); });
         }
     }
 
-    private Cape getCape(URI uri) throws IOException {
+    private Cape getCape(URI uri) {
         UUID playerUuid = UUID.fromString(UUIDUtils.toDashedUUID(uri.getSchemeSpecificPart()));
         GeyserSession session = GeyserConnector.getInstance().getPlayerByUuid(playerUuid);
         BedrockClientData clientData = session.getClientData();
+
+        if (!ALLOW_BEDROCK_CHARACTER_CREATOR_SKINS && !clientData.isCapeOnClassicSkin()) {
+            throw new ResourceLoadFailureException("No bedrock client cape available");
+        }
 
         return Cape.builder()
                 .resourceUri(uri)
@@ -57,6 +57,5 @@ public class BedrockClientDataCapeLoader implements ResourceLoader<Cape, Void> {
                         clientData.getCapeImageWidth(),
                         clientData.getCapeImageHeight()))
                 .build();
-
     }
 }

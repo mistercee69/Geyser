@@ -28,13 +28,11 @@ package org.geysermc.connector.network;
 import com.nukkitx.protocol.bedrock.BedrockPacket;
 import com.nukkitx.protocol.bedrock.BedrockPacketCodec;
 import com.nukkitx.protocol.bedrock.data.ResourcePackType;
-import com.nukkitx.protocol.bedrock.data.skin.SerializedSkin;
 import com.nukkitx.protocol.bedrock.packet.*;
 import org.geysermc.connector.GeyserConnector;
 import org.geysermc.connector.common.AuthType;
 import org.geysermc.connector.configuration.GeyserConfiguration;
 import org.geysermc.connector.network.session.GeyserSession;
-import org.geysermc.connector.network.session.auth.BedrockClientData;
 import org.geysermc.connector.network.translators.PacketTranslatorRegistry;
 import org.geysermc.connector.skin.SkinManager;
 import org.geysermc.connector.utils.*;
@@ -42,7 +40,10 @@ import org.geysermc.connector.utils.*;
 import java.io.FileInputStream;
 import java.io.InputStream;
 
+import static org.geysermc.connector.skin.SkinManager.buildCachedEntry;
+
 public class UpstreamPacketHandler extends LoggingPacketHandler {
+    public static final boolean ALLOW_BEDROCK_CHARACTER_CREATOR_SKINS = GeyserConnector.getInstance().getConfig().isAllowBedrockCharacterCreatorSkins();
 
     public UpstreamPacketHandler(GeyserConnector connector, GeyserSession session) {
         super(connector, session);
@@ -54,24 +55,20 @@ public class UpstreamPacketHandler extends LoggingPacketHandler {
 
     @Override
     public boolean handle(PlayerSkinPacket packet) {
-        session.getConnector().getLogger().info("Player skin received: " + packet);
+        session.getConnector().getLogger().debug("Player skin received: " + packet);
+
         if (packet.getUuid().equals(session.getAuthData().getUUID())) {
-            BedrockClientData clientData = session.getClientData();
-            SerializedSkin skin = packet.getSkin();
-            SkinManager.updateBedrockSkin(session.getPlayerEntity(), session, skin);
+            SkinManager.updateBedrockSkin(session.getPlayerEntity(), session, packet.getSkin());
+
+            if (!ALLOW_BEDROCK_CHARACTER_CREATOR_SKINS && packet.getSkin().isPersona()) {
+                // override with whatever skin we came up with
+                PlayerListPacket.Entry entry = buildCachedEntry(session, session.getPlayerEntity());
+                packet.setSkin(entry.getSkin());
+            }
 
             // notify other clients (use geyser uuid)
             packet.setUuid(session.getPlayerEntity().getUuid());
             session.broadcastUpstreamPacket(packet);
-
-            // acknowledge to sending client
-            PlayerSkinPacket ack = new PlayerSkinPacket();
-            ack.setSkin(packet.getSkin());
-            ack.setOldSkinName(packet.getOldSkinName());
-            ack.setNewSkinName(packet.getNewSkinName());
-            ack.setUuid(session.getAuthData().getUUID());
-            ack.setTrustedSkin(true);
-            session.sendUpstreamPacket(ack);
         }
 
         return true;

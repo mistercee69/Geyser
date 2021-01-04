@@ -121,6 +121,7 @@ public class PlayerEntity extends LivingEntity {
 
         updateEquipment(session);
         updateBedrockAttributes(session);
+        session.getConnector().getLogger().debug("Spawned player [" + uuid + "|" + username + "] at location " + position + " with id " + geyserId + " (java id " + entityId + ")");
     }
 
     public void sendPlayer(GeyserSession session) {
@@ -348,7 +349,11 @@ public class PlayerEntity extends LivingEntity {
         session.sendUpstreamPacket(updateAttributesPacket);
     }
 
-    public boolean isSlimByDefault() {
+    public boolean isSlim() {
+        try {
+            return profile.getTexture(GameProfile.TextureType.SKIN).getModel() == GameProfile.TextureModel.SLIM;
+        } catch (Exception ignored) {
+        }
         return (Math.abs(this.getUuid().hashCode() % 2) == 1);
     }
 }

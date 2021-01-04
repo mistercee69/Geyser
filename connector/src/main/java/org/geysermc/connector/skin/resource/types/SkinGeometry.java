@@ -3,17 +3,20 @@ package org.geysermc.connector.skin.resource.types;
 import com.fasterxml.jackson.core.util.BufferRecyclers;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Data;
+import lombok.NonNull;
+import lombok.ToString;
 import org.geysermc.connector.GeyserConnector;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Arrays;
 
 @Data
 public class SkinGeometry implements Resource {
     private final URI resourceUri;
     private final String resourcePatch;
     private final String name;
+    @ToString.Exclude
+    @NonNull
     private final String data;
 
     SkinGeometry(URI resourceUri, String resourcePatch, String name, String data) {
@@ -70,11 +73,15 @@ public class SkinGeometry implements Resource {
             if (name == null) {
                 name = convertToGeometryName(resourcePatch);
             }
+            if (data == null) {
+                data = "";
+            }
             return new SkinGeometry(resourceUri, resourcePatch, name, data);
         }
 
         private static String convertToResourcePatch(String geometryName) {
-            return "{\"geometry\" : {\"default\" : \"" + Arrays.toString(BufferRecyclers.getJsonStringEncoder().quoteAsString(geometryName)) + "\"}}";
+
+            return "{\"geometry\" : {\"default\" :\"" + new String(BufferRecyclers.getJsonStringEncoder().quoteAsString(geometryName)) + "\"}}";
         }
 
         private static String convertToGeometryName(String resourcePatch) {
@@ -82,8 +89,11 @@ public class SkinGeometry implements Resource {
                 JsonNode jsonNode = GeyserConnector.JSON_MAPPER.readTree(resourcePatch);
                 if (jsonNode.isObject()) {
                     JsonNode geometryNode = jsonNode.get("geometry");
-                    if (geometryNode.isTextual()) {
-                        return geometryNode.asText();
+                    if (geometryNode.isObject()) {
+                        JsonNode defaultNode = geometryNode.get("default");
+                        if (defaultNode.isTextual()) {
+                            return defaultNode.asText();
+                        }
                     }
                 }
                 throw new IllegalArgumentException("Invalid resourcePatch");

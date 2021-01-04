@@ -26,15 +26,11 @@
 package org.geysermc.connector.network.translators.java.entity;
 
 import com.github.steveice10.mc.protocol.packet.ingame.server.entity.ServerEntityStatusPacket;
-import com.nukkitx.protocol.bedrock.data.SoundEvent;
 import com.nukkitx.protocol.bedrock.data.LevelEventType;
+import com.nukkitx.protocol.bedrock.data.SoundEvent;
 import com.nukkitx.protocol.bedrock.data.entity.EntityData;
 import com.nukkitx.protocol.bedrock.data.entity.EntityEventType;
-import com.nukkitx.protocol.bedrock.packet.EntityEventPacket;
-import com.nukkitx.protocol.bedrock.packet.LevelSoundEvent2Packet;
-import com.nukkitx.protocol.bedrock.packet.LevelEventPacket;
-import com.nukkitx.protocol.bedrock.packet.SetEntityDataPacket;
-import com.nukkitx.protocol.bedrock.packet.SetEntityMotionPacket;
+import com.nukkitx.protocol.bedrock.packet.*;
 import org.geysermc.connector.entity.Entity;
 import org.geysermc.connector.entity.type.EntityType;
 import org.geysermc.connector.network.session.GeyserSession;
@@ -65,23 +61,23 @@ public class JavaEntityStatusTranslator extends PacketTranslator<ServerEntitySta
                 return;
             case PLAYER_OP_PERMISSION_LEVEL_0:
                 session.setOpPermissionLevel(0);
-                session.sendAdventureSettings();
+                broadcastAdventureSettings(session);
                 return;
             case PLAYER_OP_PERMISSION_LEVEL_1:
                 session.setOpPermissionLevel(1);
-                session.sendAdventureSettings();
+                broadcastAdventureSettings(session);
                 return;
             case PLAYER_OP_PERMISSION_LEVEL_2:
                 session.setOpPermissionLevel(2);
-                session.sendAdventureSettings();
+                broadcastAdventureSettings(session);
                 return;
             case PLAYER_OP_PERMISSION_LEVEL_3:
                 session.setOpPermissionLevel(3);
-                session.sendAdventureSettings();
+                broadcastAdventureSettings(session);
                 return;
             case PLAYER_OP_PERMISSION_LEVEL_4:
                 session.setOpPermissionLevel(4);
-                session.sendAdventureSettings();
+                broadcastAdventureSettings(session);
                 return;
 
             // EntityEventType.HURT sends extra data depending on the type of damage. However this appears to have no visual changes
@@ -186,5 +182,20 @@ public class JavaEntityStatusTranslator extends PacketTranslator<ServerEntitySta
         }
 
         session.sendUpstreamPacket(entityEventPacket);
+    }
+
+    public void broadcastAdventureSettings(GeyserSession session) {
+        session.sendAdventureSettings();
+        long javaId = session.getPlayerEntity().getEntityId();
+        for (GeyserSession otherSession : session.getConnector().getPlayers()) {
+            if (otherSession != session) {
+                if (!otherSession.isClosed() && session.getUpstream().isInitialized()) {
+                    Entity otherEntity = otherSession.getEntityCache().getEntityByJavaId(javaId);
+                    if (otherEntity != null) {
+                        otherSession.sendUpstreamPacket(session.getAdventureSettings(otherEntity.getGeyserId()));
+                    }
+                }
+            }
+        }
     }
 }

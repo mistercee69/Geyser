@@ -30,8 +30,7 @@ public class JavaGameProfileCapeLoader implements ResourceLoader<Cape, GameProfi
             try {
                 return getCape(descriptor);
             } catch (Throwable e) {
-                e.printStackTrace();
-                throw new ResourceLoadFailureException(e);
+                throw ResourceLoadFailureException.getOrWrapException(e);
             }
         });
     }
@@ -41,8 +40,7 @@ public class JavaGameProfileCapeLoader implements ResourceLoader<Cape, GameProfi
         try {
             return CompletableFuture.completedFuture(getCape(descriptor));
         } catch (Throwable e) {
-            e.printStackTrace();
-            return CompletableFuture.supplyAsync(() -> { throw new ResourceLoadFailureException(e); });
+            return CompletableFuture.supplyAsync(() -> { throw ResourceLoadFailureException.getOrWrapException(e); });
         }
     }
 

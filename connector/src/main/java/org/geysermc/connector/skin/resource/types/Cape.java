@@ -7,7 +7,6 @@ import java.net.URI;
 
 @Data
 @Builder
-
 public class Cape implements Resource {
     private final URI resourceUri;
     private final String capeId;

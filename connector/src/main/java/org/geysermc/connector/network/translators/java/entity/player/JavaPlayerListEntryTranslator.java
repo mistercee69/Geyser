@@ -54,21 +54,24 @@ public class JavaPlayerListEntryTranslator extends PacketTranslator<ServerPlayer
                     if (self) {
                         // Entity is ourself
                         playerEntity = session.getPlayerEntity();
-                        SkinManager.registerJavaSkin(playerEntity, session);
+                        if (session.isOnline()) {
+                            SkinManager.registerJavaSkin(playerEntity, session);
+                        } else {
+                            SkinManager.registerBedrockSkin(playerEntity, session);
+                        }
                     } else {
                         playerEntity = session.getEntityCache().getPlayerEntity(entry.getProfile().getId());
-                    }
-
-                    if (playerEntity == null) {
-                        // It's a new player
-                        playerEntity = new PlayerEntity(
-                                entry.getProfile(),
-                                -1,
-                                session.getEntityCache().getNextEntityId().incrementAndGet(),
-                                Vector3f.ZERO,
-                                Vector3f.ZERO,
-                                Vector3f.ZERO
-                        );
+                        if (playerEntity == null) {
+                            // It's a new player
+                            playerEntity = new PlayerEntity(
+                                    entry.getProfile(),
+                                    -1,
+                                    session.getEntityCache().getNextEntityId().incrementAndGet(),
+                                    Vector3f.ZERO,
+                                    Vector3f.ZERO,
+                                    Vector3f.ZERO
+                            );
+                        }
                     }
 
                     session.getEntityCache().addPlayerEntity(playerEntity);

@@ -101,6 +101,6 @@ public enum SkinGeometryType {
     }
 
     public static ResourceDescriptor<SkinGeometry, Void> getDefaultDescriptorFor(@NonNull PlayerEntity playerEntity) {
-        return ResourceDescriptor.of(playerEntity.isSlimByDefault() ? LEGACY_SLIM.getUriFor(playerEntity) : LEGACY.getUriFor(playerEntity), SkinGeometry.class);
+        return ResourceDescriptor.of(playerEntity.isSlim() ? LEGACY_SLIM.getUriFor(playerEntity) : LEGACY.getUriFor(playerEntity), SkinGeometry.class);
     }
 }

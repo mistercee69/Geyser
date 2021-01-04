@@ -21,8 +21,7 @@ public class StdUrlSkinLoader implements ResourceLoader<PlayerSkin, Void> {
             try {
                 return getPlayerSkin(descriptor.getUri());
             } catch (Throwable e) {
-                e.printStackTrace();
-                throw new ResourceLoadFailureException(e);
+                throw ResourceLoadFailureException.getOrWrapException(e);
             }
         });
     }
@@ -32,8 +31,7 @@ public class StdUrlSkinLoader implements ResourceLoader<PlayerSkin, Void> {
         try {
             return CompletableFuture.completedFuture(getPlayerSkin(descriptor.getUri()));
         } catch (Throwable e) {
-            e.printStackTrace();
-            return CompletableFuture.supplyAsync(() -> { throw new ResourceLoadFailureException(e); });
+            return CompletableFuture.supplyAsync(() -> { throw ResourceLoadFailureException.getOrWrapException(e); });
         }
     }
 

@@ -27,8 +27,7 @@ public class FiveZigUrlCapeLoader implements ResourceLoader<Cape, Void> {
 
                 return getCape(descriptor.getUri(), CapeType.FIVEZIG.getCapeIdFor(descriptor.getUri()));
             } catch (Throwable e) {
-                e.printStackTrace();
-                throw new ResourceLoadFailureException(e);
+                throw ResourceLoadFailureException.getOrWrapException(e);
             }
         });
     }
@@ -38,8 +37,7 @@ public class FiveZigUrlCapeLoader implements ResourceLoader<Cape, Void> {
         try {
             return CompletableFuture.completedFuture(getCape(descriptor.getUri(), CapeType.FIVEZIG.getCapeIdFor(descriptor.getUri())));
         } catch (Throwable e) {
-            e.printStackTrace();
-            return CompletableFuture.supplyAsync(() -> { throw new ResourceLoadFailureException(e); });
+            return CompletableFuture.supplyAsync(() -> { throw ResourceLoadFailureException.getOrWrapException(e); });
         }
     }
 

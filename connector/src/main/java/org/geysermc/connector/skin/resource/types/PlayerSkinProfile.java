@@ -30,4 +30,15 @@ public class PlayerSkinProfile implements Resource {
     public static ResourceDescriptor<PlayerSkinProfile, Void> getDescriptorFor(@NonNull PlayerSkinProfile playerSkinProfile) {
         return ResourceDescriptor.of(playerSkinProfile.getResourceUri(), PlayerSkinProfile.class);
     }
+
+    public static PlayerSkinProfile getDefaultSkinProfile(PlayerEntity playerEntity) {
+        return PlayerSkinProfile.builder()
+                .resourceUri(getUriFor(playerEntity))
+                .playerId(playerEntity.getUuid())
+                .bedrockSkinLoaded(false)
+                .skinDescriptor(PlayerSkinType.getDefaultDescriptorFor(playerEntity))
+                .capeDescriptor(CapeType.getDefaultDescriptorFor(playerEntity))
+                .geometryDescriptor(SkinGeometryType.getDefaultDescriptorFor(playerEntity))
+                .build();
+    }
 }
