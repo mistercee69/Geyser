@@ -40,8 +40,6 @@ import org.geysermc.connector.utils.*;
 import java.io.FileInputStream;
 import java.io.InputStream;
 
-import static org.geysermc.connector.skin.SkinManager.buildCachedEntry;
-
 public class UpstreamPacketHandler extends LoggingPacketHandler {
     public static final boolean ALLOW_BEDROCK_CHARACTER_CREATOR_SKINS = GeyserConnector.getInstance().getConfig().isAllowBedrockCharacterCreatorSkins();
 
@@ -57,15 +55,29 @@ public class UpstreamPacketHandler extends LoggingPacketHandler {
     public boolean handle(PlayerSkinPacket packet) {
         session.getConnector().getLogger().debug("Player skin received: " + packet);
 
-        if (packet.getUuid().equals(session.getAuthData().getUUID())) {
-            SkinManager.updateBedrockSkin(session.getPlayerEntity(), session, packet.getSkin());
+        // client initiated skin changes are not allowed for online auth
+        boolean isSkinChangeRejected = false;
+        if (GeyserConnector.getInstance().getAuthType() == AuthType.ONLINE) {
+            session.sendMessage("Client skin changes are not permitted with online authentication mode");
+            isSkinChangeRejected = true;
+        } else {
+            // skin changes are permitted
 
-            if (!ALLOW_BEDROCK_CHARACTER_CREATOR_SKINS && packet.getSkin().isPersona()) {
-                // override with whatever skin we came up with
-                PlayerListPacket.Entry entry = buildCachedEntry(session, session.getPlayerEntity());
-                packet.setSkin(entry.getSkin());
+            // verify as client uses AuthData UUID (not floodgate uuid)
+            if (packet.getUuid().equals(session.getAuthData().getUUID())) {
+                // if it's a persona skin check if they are allowed
+                if (packet.getSkin().isPersona() && !ALLOW_BEDROCK_CHARACTER_CREATOR_SKINS) {
+                    session.sendMessage("Character creator (persona) skins have been disabled by the server admin");
+                    isSkinChangeRejected = true;
+                }
             }
+        }
 
+        if (isSkinChangeRejected) {
+            // override by sending client their previous skin as a playerList update
+            session.getPlayerListManager().forcePlayerProfileUpdate(session.getPlayerEntity());
+        } else {
+            SkinManager.updateBedrockSkin(session.getPlayerEntity(), session, packet.getSkin());
             // notify other clients (use geyser uuid)
             packet.setUuid(session.getPlayerEntity().getUuid());
             session.broadcastUpstreamPacket(packet);
@@ -103,7 +115,7 @@ public class UpstreamPacketHandler extends LoggingPacketHandler {
             ResourcePackManifest.Header header = resourcePack.getManifest().getHeader();
             resourcePacksInfo.getResourcePackInfos().add(new ResourcePacksInfoPacket.Entry(
                     header.getUuid().toString(), header.getVersionString(), resourcePack.getFile().length(),
-                            "", "", "", false, false));
+                    "", "", "", false, false));
         }
         resourcePacksInfo.setForcedToAccept(GeyserConnector.getInstance().getConfig().isForceResourcePacks());
         session.sendUpstreamPacket(resourcePacksInfo);

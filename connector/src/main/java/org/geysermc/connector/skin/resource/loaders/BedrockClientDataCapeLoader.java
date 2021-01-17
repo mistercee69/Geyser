@@ -41,7 +41,8 @@ public class BedrockClientDataCapeLoader implements ResourceLoader<Cape, Void> {
     }
 
     private Cape getCape(URI uri) {
-        UUID playerUuid = UUID.fromString(UUIDUtils.toDashedUUID(uri.getSchemeSpecificPart()));
+        String[] split = uri.getSchemeSpecificPart().split("/");
+        UUID playerUuid = UUID.fromString(UUIDUtils.toDashedUUID(split[0]));
         GeyserSession session = GeyserConnector.getInstance().getPlayerByUuid(playerUuid);
         BedrockClientData clientData = session.getClientData();
 

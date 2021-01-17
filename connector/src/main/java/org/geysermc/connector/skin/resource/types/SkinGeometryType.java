@@ -2,15 +2,15 @@ package org.geysermc.connector.skin.resource.types;
 
 import lombok.Getter;
 import lombok.NonNull;
+import org.geysermc.connector.GeyserConnector;
 import org.geysermc.connector.entity.player.PlayerEntity;
+import org.geysermc.connector.network.session.GeyserSession;
 import org.geysermc.connector.skin.resource.ResourceDescriptor;
 import org.geysermc.connector.skin.resource.ResourceLoader;
 import org.geysermc.connector.skin.resource.loaders.BedrockClientDataGeometryLoader;
 import org.geysermc.connector.skin.resource.loaders.InternalSkinGeometryLoader;
-import org.geysermc.connector.skin.resource.loaders.JavaGameProfileGeometryLoader;
 
 import java.net.URI;
-import java.util.UUID;
 import java.util.regex.Pattern;
 
 @Getter
@@ -18,13 +18,8 @@ public enum SkinGeometryType {
     BEDROCK_CLIENT_DATA(
             "bedrockClientGeom:%s",
             "^bedrockClientGeom:.*",
-            TextureIdUriType.UUID,
+            TextureIdUriType.UUID_AND_SKIN_ID,
             BedrockClientDataGeometryLoader.class),
-    JAVA_GAME_PROFILE(
-            "javaClientGeom:%s",
-            "^javaClientGeom:.*",
-            TextureIdUriType.UUID,
-            JavaGameProfileGeometryLoader.class),
     LEGACY(
             "geom:geometry.humanoid.custom",
             "geom:geometry.humanoid.custom",
@@ -68,19 +63,22 @@ public enum SkinGeometryType {
     }
 
     public URI getUriFor(PlayerEntity playerEntity) {
-        return getUriFor(toRequestedType(idUriType, playerEntity.getUuid(), playerEntity.getUsername()));
+        return getUriFor(toRequestedType(idUriType, playerEntity));
     }
 
     private URI getUriFor(String type) {
         return this.idUriType == TextureIdUriType.NONE ? URI.create(uriTemplate) : URI.create(String.format(uriTemplate, type));
     }
 
-    private static String toRequestedType(TextureIdUriType type, UUID uuid, String username) {
+    private static String toRequestedType(TextureIdUriType type, PlayerEntity playerEntity) {
         switch (type) {
             case NONE: return "";
-            case UUID: return uuid.toString().replace("-", "");
-            case UUID_DASHED: return uuid.toString();
-            default: return username;
+            case UUID: return playerEntity.getUuid().toString().replace("-", "");
+            case UUID_DASHED: return playerEntity.getUuid().toString();
+            case UUID_AND_SKIN_ID:
+                GeyserSession session = GeyserConnector.getInstance().getPlayerByUuid(playerEntity.getUuid());
+                return playerEntity.getUuid().toString()+"/"+SkinGeometry.convertToGeometryName(new String(session.getClientData().getResourcePatch()));
+            default: return playerEntity.getUsername();
         }
     }
 

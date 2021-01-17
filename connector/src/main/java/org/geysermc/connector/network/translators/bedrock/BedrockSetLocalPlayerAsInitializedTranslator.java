@@ -27,12 +27,14 @@ package org.geysermc.connector.network.translators.bedrock;
 
 import com.nukkitx.protocol.bedrock.data.entity.EntityFlag;
 import com.nukkitx.protocol.bedrock.packet.SetLocalPlayerAsInitializedPacket;
-import org.geysermc.connector.GeyserConnector;
 import org.geysermc.connector.entity.player.PlayerEntity;
+import org.geysermc.connector.entity.player.SkullPlayerEntity;
 import org.geysermc.connector.network.session.GeyserSession;
 import org.geysermc.connector.network.translators.PacketTranslator;
 import org.geysermc.connector.network.translators.Translator;
 import org.geysermc.connector.skin.SkinManager;
+
+import java.util.concurrent.TimeUnit;
 
 @Translator(packet = SetLocalPlayerAsInitializedPacket.class)
 public class BedrockSetLocalPlayerAsInitializedTranslator extends PacketTranslator<SetLocalPlayerAsInitializedPacket> {
@@ -47,24 +49,18 @@ public class BedrockSetLocalPlayerAsInitializedTranslator extends PacketTranslat
                 for (PlayerEntity entity : session.getEntityCache().getEntitiesByType(PlayerEntity.class)) {
                     if (!entity.isValid()) {
                         entity.sendPlayer(session);
-                        GeyserSession entitySession = GeyserConnector.getInstance().getPlayerByUuid(entity.getUuid());
-                        // java only player, or an bedrock player linked to Java account
-                        if (entitySession == null || entitySession.isOnline()) {
-                            SkinManager.registerJavaSkin(entity, session);
-                        } else {
-                            SkinManager.registerBedrockSkin(entity, session);
-                        }
                     }
                 }
 
                 // Send Skulls
-                for (PlayerEntity entity : session.getSkullCache().values()) {
+                for (SkullPlayerEntity entity : session.getSkullCache().values()) {
                     entity.spawnEntity(session);
 
-                    SkinManager.registerSkull(entity, session, (skin) ->  {
+                    SkinManager.refreshPlayerSkull(entity, session, (() -> session.getConnector().getGeneralThreadPool().schedule(() -> {
+                        // Delay to minimize split-second "player" pop-in
                         entity.getMetadata().getFlags().setFlag(EntityFlag.INVISIBLE, false);
                         entity.updateBedrockMetadata(session);
-                    });
+                    }, 250, TimeUnit.MILLISECONDS)));
                 }
             }
         }

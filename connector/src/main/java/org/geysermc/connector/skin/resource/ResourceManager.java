@@ -94,7 +94,7 @@ public class ResourceManager {
                 .put(pattern, loader);
     }
 
-    public static CompletableFuture<Map<? extends ResourceDescriptor<?, ?>, ResourceLoadResult>> loadAsyncForced(@NonNull ResourceDescriptor<?, ?>... descriptors) {
+    public static CompletableFuture<Map<? extends ResourceDescriptor<?, ?>, ResourceLoadResult>> forceLoadAsync(@NonNull ResourceDescriptor<?, ?>... descriptors) {
         return loadAsync(true, descriptors);
     }
 
@@ -103,7 +103,7 @@ public class ResourceManager {
     }
 
     public static CompletableFuture<Map<? extends ResourceDescriptor<?, ?>, ResourceLoadResult>> loadAsync(boolean force, @NonNull ResourceDescriptor<?, ?>... descriptors) {
-        List<CompletableFuture<ResourceLoadResult>> completableFutures = Arrays.stream(descriptors).map(force ? ResourceManager::loadAsyncForced : ResourceManager::loadAsync).collect(Collectors.toList());
+        List<CompletableFuture<ResourceLoadResult>> completableFutures = Arrays.stream(descriptors).map(force ? ResourceManager::forceLoadAsync : ResourceManager::loadAsync).collect(Collectors.toList());
         if (completableFutures.size() > 0) {
             CompletableFuture<?>[] completableFuturesArray = completableFutures.toArray(new CompletableFuture[0]);
             return CompletableFuture.allOf(completableFuturesArray)
@@ -114,16 +114,16 @@ public class ResourceManager {
         return CompletableFuture.completedFuture(Collections.emptyMap());
     }
 
-    public static <T, P> CompletableFuture<ResourceLoadResult> loadAsyncForced(@NonNull ResourceDescriptor<T, P> descriptor) {
-        return loadAsync(true, descriptor);
+    public static <T, P> CompletableFuture<ResourceLoadResult> forceLoadAsync(@NonNull ResourceDescriptor<T, P> descriptor) {
+        return loadAsync(descriptor, true);
     }
 
-    public static <T, P> CompletableFuture<ResourceLoadResult> loadAsync(@NonNull ResourceDescriptor<T, P> descriptor) {
-        return loadAsync(false, descriptor);
+    public static <T, P> CompletableFuture<ResourceLoadResult> loadAsync(@NonNull ResourceDescriptor<T, P> descriptor)  {
+        return loadAsync(descriptor, false);
     }
 
     @SneakyThrows
-    public static <T, P> CompletableFuture<ResourceLoadResult> loadAsync(boolean force, @NonNull ResourceDescriptor<T, P> descriptor) {
+    public static <T, P> CompletableFuture<ResourceLoadResult> loadAsync(@NonNull ResourceDescriptor<T, P> descriptor, boolean force) {
         ReentrantLock reentrantLock = resourceLoadLockCache.get(descriptor, ReentrantLock::new);
         reentrantLock.lock();
         try {
@@ -164,6 +164,23 @@ public class ResourceManager {
         }
     }
 
+    public static boolean allAvailable(@NonNull ResourceDescriptor<?, ?>... descriptors) {
+        boolean b = Arrays.stream(descriptors).map(ResourceManager::isAvailable).anyMatch(r -> !r);
+        return !b;
+    }
+
+    public static <T, P> boolean isAvailable(@NonNull ResourceDescriptor<T, P> descriptor) {
+        // check if it's already loaded
+        Cache<URI, ResourceContainer> uriResourceContainerCache = resources.get(descriptor.getType());
+        if (uriResourceContainerCache != null) {
+            ResourceContainer resourceContainer = uriResourceContainerCache.getIfPresent(descriptor.getUri());
+            if (resourceContainer != null) {
+                return !resourceContainer.isFailed;
+            }
+        }
+        return false;
+    }
+
     public static <T, P> void add(@NonNull ResourceDescriptor<T, P> descriptor, T resource) {
         resources.computeIfAbsent(descriptor.getType(), ResourceManager::createCache)
                 .put(descriptor.getUri(), ResourceContainer.of(resource));
@@ -193,7 +210,7 @@ public class ResourceManager {
         }
 
         if (loadSync) {
-            ResourceLoadResult loadResult = loadAsyncForced(descriptor).join();
+            ResourceLoadResult loadResult = forceLoadAsync(descriptor).join();
             if (!loadResult.isFailed()) {
                 return (T) loadResult.getResource();
             }
@@ -214,7 +231,7 @@ public class ResourceManager {
         requestedResources.put(descriptor, clientFuture);
         loader.loadAsync(descriptor)
                 .whenComplete((result, throwable) -> {
-                    logger().debug("whenComplete r: " + result + " t: " + throwable);
+                    logger().info("whenComplete r: " + result + " t: " + throwable);
                     if (throwable == null) {
                         add(descriptor, result);
                         notifySuccess(descriptor, result, clientFuture);

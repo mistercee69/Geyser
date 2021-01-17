@@ -1,14 +1,23 @@
 package org.geysermc.connector.skin.resource.types;
 
+import com.github.steveice10.mc.auth.data.GameProfile;
+import com.github.steveice10.mc.auth.exception.property.PropertyException;
 import lombok.Getter;
 import lombok.NonNull;
+import org.geysermc.connector.GeyserConnector;
 import org.geysermc.connector.entity.player.PlayerEntity;
+import org.geysermc.connector.network.session.GeyserSession;
 import org.geysermc.connector.skin.resource.ResourceDescriptor;
 import org.geysermc.connector.skin.resource.ResourceLoader;
-import org.geysermc.connector.skin.resource.loaders.*;
+import org.geysermc.connector.skin.resource.loaders.BedrockClientDataCapeLoader;
+import org.geysermc.connector.skin.resource.loaders.FiveZigUrlCapeLoader;
+import org.geysermc.connector.skin.resource.loaders.NoopLoader;
+import org.geysermc.connector.skin.resource.loaders.StdUrlCapeLoader;
 
 import java.net.URI;
-import java.util.*;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 @Getter
@@ -21,22 +30,12 @@ public enum CapeType {
     BEDROCK_CLIENT_DATA(
             "bedrockClientCape:%s",
             "^bedrockClientCape:.*",
-            TextureIdUriType.UUID,
+            TextureIdUriType.UUID_AND_SKIN_ID,
             BedrockClientDataCapeLoader.class),
-    JAVA_GAME_PROFILE(
-            "javaClientCape:%s",
-            "^javaClientCape:.*",
-            TextureIdUriType.UUID,
-            JavaGameProfileCapeLoader.class),
-    JAVA_TEXTURE(
-            "https://textures.mojang.com/texture/%s",
-            "https://textures.mojang.com/texture/.*",
-            TextureIdUriType.NONE,
-            StdUrlCapeLoader.class),
-    JAVA_LEGACY_TEXTURE(
+    JAVA_SERVER_GAME_PROFILE(
             "https://textures.minecraft.net/texture/%s",
             "https://textures.minecraft.net/texture/.*",
-            TextureIdUriType.NONE,
+            TextureIdUriType.TEXTURE_ID,
             StdUrlCapeLoader.class),
     OPTIFINE(
             "https://optifine.net/capes/%s.png",
@@ -72,11 +71,50 @@ public enum CapeType {
     }
 
     public URI getUriFor(@NonNull PlayerEntity playerEntity) {
-        return getUriFor(toRequestedType(type, playerEntity.getUuid(), playerEntity.getUsername()));
+        try {
+            return getUriFor(toRequestedType(type, playerEntity));
+        } catch (PropertyException e) {
+            // return NONE type instead
+            GeyserConnector.getInstance().getLogger().error("Cape URI creation failed", e);
+            return NONE.getUriFor(playerEntity);
+        }
     }
 
     private URI getUriFor(@NonNull String type) {
-        return URI.create(String.format(uriTemplate, type));
+        try {
+            return URI.create(String.format(uriTemplate, type));
+        } catch (Exception e) {
+            // return NONE type instead
+            GeyserConnector.getInstance().getLogger().error("Cape URI creation failed", e);
+            return NONE.getUriFor(type);
+        }
+    }
+
+    private String toRequestedType(@NonNull TextureIdUriType type, @NonNull PlayerEntity playerEntity) throws PropertyException {
+        switch (type) {
+            case NONE:
+                return "";
+            case UUID: return playerEntity.getUuid().toString().replace("-", "");
+            case UUID_DASHED: return playerEntity.getUuid().toString();
+            case UUID_AND_SKIN_ID:
+                    GeyserSession session = GeyserConnector.getInstance().getPlayerByUuid(playerEntity.getUuid());
+                    return playerEntity.getUuid() + "/" + session.getClientData().getCapeId();
+            case TEXTURE_ID:
+                try {
+                    GameProfile gameProfile = playerEntity.getProfile();
+                    Map<GameProfile.TextureType, GameProfile.Texture> textures = gameProfile.getTextures(false);
+                    if (textures.containsKey(GameProfile.TextureType.CAPE)) {
+                        String path = URI.create(textures.get(GameProfile.TextureType.CAPE).getURL()).getPath();
+                        while (path.endsWith("/"))
+                            path = path.substring(0, path.length() - 1); // strip any trailing '/'
+                        return path.substring(path.lastIndexOf('/') + 1);
+                    }
+                } catch (PropertyException e) {
+                    // probably should throw
+                    return null;
+                }
+            default: return playerEntity.getUsername();
+        }
     }
 
     public ResourceDescriptor<Cape, Void> getDescriptorFor(@NonNull PlayerEntity playerEntity) {
@@ -95,8 +133,7 @@ public enum CapeType {
         String[] urlSection = uri.toString().split("/");
         switch (this) {
             case BEDROCK_CLIENT_DATA:
-            case JAVA_TEXTURE:
-            case JAVA_LEGACY_TEXTURE:
+            case JAVA_SERVER_GAME_PROFILE:
             case OPTIFINE:
             case LABYMOD:
             case FIVEZIG:
@@ -110,16 +147,6 @@ public enum CapeType {
 
     public static CapeType[] values(EnumSet<TextureIdUriType> textureIdUriTypes) {
         return Arrays.stream(values()).filter(e -> textureIdUriTypes.contains(e.type)).toArray(CapeType[]::new);
-    }
-
-    private static String toRequestedType(@NonNull TextureIdUriType type, @NonNull UUID uuid, @NonNull String username) {
-        switch (type) {
-            case NONE:
-                return "";
-            case UUID: return uuid.toString().replace("-", "");
-            case UUID_DASHED: return uuid.toString();
-            default: return username;
-        }
     }
 
     public static CapeType fromUri(@NonNull URI uri) {

@@ -32,7 +32,6 @@ import org.geysermc.connector.entity.player.PlayerEntity;
 import org.geysermc.connector.network.session.GeyserSession;
 import org.geysermc.connector.network.translators.PacketTranslator;
 import org.geysermc.connector.network.translators.Translator;
-import org.geysermc.connector.skin.SkinManager;
 import org.geysermc.connector.utils.LanguageUtils;
 
 @Translator(packet = ServerSpawnPlayerPacket.class)
@@ -57,18 +56,9 @@ public class JavaSpawnPlayerTranslator extends PacketTranslator<ServerSpawnPlaye
             entity.setPosition(position);
             entity.setRotation(rotation);
         }
-        session.getEntityCache().cacheEntity(entity);
-
+        session.getPlayerListManager().notifyPlayerSpawnUpdate(entity);
         if (session.getUpstream().isInitialized()) {
             entity.sendPlayer(session);
-
-            // java only player, or an bedrock player linked to Java account
-            GeyserSession entitySession = GeyserConnector.getInstance().getPlayerByUuid(entity.getUuid());
-            if (entitySession == null || entitySession.isOnline()) {
-                SkinManager.registerJavaSkin(entity, session);
-            } else {
-                SkinManager.registerBedrockSkin(entity, session);
-            }
         }
     }
 }

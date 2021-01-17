@@ -42,13 +42,15 @@ public class BedrockClientDataSkinLoader implements ResourceLoader<Skin, Void> {
     }
 
     private Skin getPlayerSkin(URI uri) {
-        UUID playerUuid = UUID.fromString(UUIDUtils.toDashedUUID(uri.getSchemeSpecificPart()));
+        String[] split = uri.getSchemeSpecificPart().split("/");
+        UUID playerUuid = UUID.fromString(UUIDUtils.toDashedUUID(split[0]));
         GeyserSession session = GeyserConnector.getInstance().getPlayerByUuid(playerUuid);
         BedrockClientData clientData = session.getClientData();
 
         if (GeyserConnector.getInstance().getLogger().isDebug()) {
-            GeyserConnector.getInstance().getLogger().debug("[Skin Info] id: " + clientData.getSkinId() + " width: " + clientData.getSkinImageWidth() + " height: " + clientData.getSkinImageHeight() +
-                    " isPersona: " + clientData.isPersonaSkin() + " isPremium: " + clientData.isPremiumSkin() + " isCapeOnClassic: " + clientData.isCapeOnClassicSkin());
+            String skinContents = clientData.getSkinData() != null ? (clientData.getSkinData().length + "bytes") : "(null)";
+            GeyserConnector.getInstance().getLogger().debug("[Skin Info] id: " + clientData.getSkinId() + " skinData: " + skinContents + " width: " + clientData.getSkinImageWidth() + " height: " + clientData.getSkinImageHeight() +
+                        " isPersona: " + clientData.isPersonaSkin() + " isPremium: " + clientData.isPremiumSkin() + " isCapeOnClassic: " + clientData.isCapeOnClassicSkin());
         }
 
         if (!ALLOW_BEDROCK_CHARACTER_CREATOR_SKINS) {

@@ -71,9 +71,9 @@ public class BedrockClientData {
     @JsonProperty(value = "CapeOnClassicSkin")
     private boolean capeOnClassicSkin;
     @JsonProperty(value = "SkinResourcePatch")
-    private String geometryName;
+    private byte[] resourcePatch;
     @JsonProperty(value = "SkinGeometryData")
-    private String geometryData;
+    private byte[] geometryData;
     @JsonProperty(value = "PersonaSkin")
     private boolean personaSkin;
     @JsonProperty(value = "PremiumSkin")

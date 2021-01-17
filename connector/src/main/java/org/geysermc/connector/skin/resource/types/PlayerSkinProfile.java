@@ -31,6 +31,10 @@ public class PlayerSkinProfile implements Resource {
         return ResourceDescriptor.of(playerSkinProfile.getResourceUri(), PlayerSkinProfile.class);
     }
 
+    public ResourceDescriptor<?,?>[] getDescriptors() {
+        return new ResourceDescriptor<?,?>[]{skinDescriptor, capeDescriptor, geometryDescriptor};
+    }
+
     public static PlayerSkinProfile getDefaultSkinProfile(PlayerEntity playerEntity) {
         return PlayerSkinProfile.builder()
                 .resourceUri(getUriFor(playerEntity))

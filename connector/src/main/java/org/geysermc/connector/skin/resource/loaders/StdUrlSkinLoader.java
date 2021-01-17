@@ -42,6 +42,7 @@ public class StdUrlSkinLoader implements ResourceLoader<Skin, Void> {
 
         return Skin.builder()
                 .resourceUri(skinUri)
+                .skinId(skinUri.toString())
                 .skinData(TextureData.of(
                         SkinUtils.bufferedImageToImageData(skinImage),
                         skinImage.getWidth(),

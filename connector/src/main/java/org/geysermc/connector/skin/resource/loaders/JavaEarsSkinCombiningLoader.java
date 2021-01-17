@@ -40,7 +40,7 @@ public class JavaEarsSkinCombiningLoader implements ResourceLoader<Skin, JavaEar
         ResourceDescriptor<Ears, ?> earsDescriptor = descriptor.getParams().getEars();
         SkinType skinType = SkinType.fromUri(skinDescriptor.getUri());
         EarsType earsType = EarsType.fromUri(earsDescriptor.getUri());
-        if (skinType == SkinType.JAVA_GAME_PROFILE && earsType != EarsType.NONE && earsType != EarsType.DEADMAU5) {
+        if (skinType == SkinType.JAVA_SERVER_GAME_PROFILE && earsType != EarsType.NONE && earsType != EarsType.DEADMAU5) {
             Skin existingSkin = ResourceManager.get(skinDescriptor);
             Ears ears = ResourceManager.get(earsDescriptor);
             try {

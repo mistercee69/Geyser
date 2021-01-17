@@ -29,12 +29,11 @@ import com.github.steveice10.mc.protocol.data.game.PlayerListEntry;
 import com.github.steveice10.mc.protocol.data.game.PlayerListEntryAction;
 import com.github.steveice10.mc.protocol.packet.ingame.server.ServerPlayerListEntryPacket;
 import com.nukkitx.math.vector.Vector3f;
-import com.nukkitx.protocol.bedrock.packet.PlayerListPacket;
+import org.geysermc.connector.GeyserConnector;
 import org.geysermc.connector.entity.player.PlayerEntity;
 import org.geysermc.connector.network.session.GeyserSession;
 import org.geysermc.connector.network.translators.PacketTranslator;
 import org.geysermc.connector.network.translators.Translator;
-import org.geysermc.connector.skin.SkinManager;
 
 @Translator(packet = ServerPlayerListEntryPacket.class)
 public class JavaPlayerListEntryTranslator extends PacketTranslator<ServerPlayerListEntryPacket> {
@@ -43,9 +42,8 @@ public class JavaPlayerListEntryTranslator extends PacketTranslator<ServerPlayer
         if (packet.getAction() != PlayerListEntryAction.ADD_PLAYER && packet.getAction() != PlayerListEntryAction.REMOVE_PLAYER)
             return;
 
-        PlayerListPacket translate = new PlayerListPacket();
-        translate.setAction(packet.getAction() == PlayerListEntryAction.ADD_PLAYER ? PlayerListPacket.Action.ADD : PlayerListPacket.Action.REMOVE);
         for (PlayerListEntry entry : packet.getEntries()) {
+            GeyserConnector.getInstance().getLogger(session).debug("Java PlayerListEntry: " + entry);
             switch (packet.getAction()) {
                 case ADD_PLAYER:
                     PlayerEntity playerEntity;
@@ -54,11 +52,6 @@ public class JavaPlayerListEntryTranslator extends PacketTranslator<ServerPlayer
                     if (self) {
                         // Entity is ourself
                         playerEntity = session.getPlayerEntity();
-                        if (session.isOnline()) {
-                            SkinManager.registerJavaSkin(playerEntity, session);
-                        } else {
-                            SkinManager.registerBedrockSkin(playerEntity, session);
-                        }
                     } else {
                         playerEntity = session.getEntityCache().getPlayerEntity(entry.getProfile().getId());
                         if (playerEntity == null) {
@@ -74,13 +67,11 @@ public class JavaPlayerListEntryTranslator extends PacketTranslator<ServerPlayer
                         }
                     }
 
-                    session.getEntityCache().addPlayerEntity(playerEntity);
                     playerEntity.setProfile(entry.getProfile());
                     playerEntity.setPlayerList(true);
                     playerEntity.setValid(true);
 
-                    PlayerListPacket.Entry playerListEntry = SkinManager.buildCachedEntry(session, playerEntity);
-                    translate.getEntries().add(playerListEntry);
+                    session.getPlayerListManager().registerPlayer(playerEntity);
                     break;
                 case REMOVE_PLAYER:
                     PlayerEntity entity = session.getEntityCache().getPlayerEntity(entry.getProfile().getId());
@@ -88,21 +79,10 @@ public class JavaPlayerListEntryTranslator extends PacketTranslator<ServerPlayer
                         // Just remove the entity's player list status
                         // Don't despawn the entity - the Java server will also take care of that.
                         entity.setPlayerList(false);
-                    }
-                    // As the player entity is no longer present, we can remove the entry
-                    session.getEntityCache().removePlayerEntity(entry.getProfile().getId());
-                    if (entity == session.getPlayerEntity()) {
-                        // If removing ourself we use our AuthData UUID
-                        translate.getEntries().add(new PlayerListPacket.Entry(session.getAuthData().getUUID()));
-                    } else {
-                        translate.getEntries().add(new PlayerListPacket.Entry(entry.getProfile().getId()));
+                        session.getPlayerListManager().unregisterPlayer(entity);
                     }
                     break;
             }
-        }
-
-        if (packet.getAction() == PlayerListEntryAction.REMOVE_PLAYER || session.getUpstream().isInitialized()) {
-            session.sendUpstreamPacket(translate);
         }
     }
 }

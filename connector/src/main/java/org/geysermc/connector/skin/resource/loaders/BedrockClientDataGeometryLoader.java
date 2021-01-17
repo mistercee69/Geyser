@@ -12,8 +12,6 @@ import org.geysermc.connector.utils.LanguageUtils;
 import org.geysermc.connector.utils.UUIDUtils;
 
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -43,7 +41,8 @@ public class BedrockClientDataGeometryLoader implements ResourceLoader<SkinGeome
     }
 
     private SkinGeometry getGeometry(@NonNull URI uri) {
-        UUID playerUuid = UUID.fromString(UUIDUtils.toDashedUUID(uri.getSchemeSpecificPart()));
+        String[] split = uri.getSchemeSpecificPart().split("/");
+        UUID playerUuid = UUID.fromString(UUIDUtils.toDashedUUID(split[0]));
         GeyserSession session = GeyserConnector.getInstance().getPlayerByUuid(playerUuid);
         BedrockClientData clientData = session.getClientData();
 
@@ -53,13 +52,10 @@ public class BedrockClientDataGeometryLoader implements ResourceLoader<SkinGeome
             }
         }
 
-        byte[] geometryNameBytes = Base64.getDecoder().decode(clientData.getGeometryName().getBytes(StandardCharsets.UTF_8));
-        byte[] geometryBytes = Base64.getDecoder().decode(clientData.getGeometryData().getBytes(StandardCharsets.UTF_8));
-
         return SkinGeometry.builder()
                 .resourceUri(uri)
-                .resourcePatch(new String(geometryNameBytes))
-                .data(new String(geometryBytes))
+                .resourcePatch(new String(clientData.getResourcePatch()))
+                .data(new String(clientData.getGeometryData()))
                 .build();
     }
 }

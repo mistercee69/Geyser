@@ -79,27 +79,29 @@ public class SkinGeometry implements Resource {
             return new SkinGeometry(resourceUri, resourcePatch, name, data);
         }
 
-        private static String convertToResourcePatch(String geometryName) {
+    }
 
-            return "{\"geometry\" : {\"default\" :\"" + new String(BufferRecyclers.getJsonStringEncoder().quoteAsString(geometryName)) + "\"}}";
-        }
+    public static String convertToResourcePatch(String geometryName) {
 
-        private static String convertToGeometryName(String resourcePatch) {
-            try {
-                JsonNode jsonNode = GeyserConnector.JSON_MAPPER.readTree(resourcePatch);
-                if (jsonNode.isObject()) {
-                    JsonNode geometryNode = jsonNode.get("geometry");
-                    if (geometryNode.isObject()) {
-                        JsonNode defaultNode = geometryNode.get("default");
-                        if (defaultNode.isTextual()) {
-                            return defaultNode.asText();
-                        }
+        return "{\"geometry\" : {\"default\" :\"" + new String(BufferRecyclers.getJsonStringEncoder().quoteAsString(geometryName)) + "\"}}";
+    }
+
+    public static String convertToGeometryName(String resourcePatch) {
+        try {
+            JsonNode jsonNode = GeyserConnector.JSON_MAPPER.readTree(resourcePatch);
+            if (jsonNode.isObject()) {
+                JsonNode geometryNode = jsonNode.get("geometry");
+                if (geometryNode.isObject()) {
+                    JsonNode defaultNode = geometryNode.get("default");
+                    if (defaultNode.isTextual()) {
+                        return defaultNode.asText();
                     }
                 }
-                throw new IllegalArgumentException("Invalid resourcePatch");
-            } catch (IOException e) {
-                throw new IllegalArgumentException("Invalid resourcePatch", e);
             }
+            throw new IllegalArgumentException("Invalid resourcePatch");
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Invalid resourcePatch", e);
         }
     }
+
 }

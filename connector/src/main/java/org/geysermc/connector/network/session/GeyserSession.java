@@ -82,7 +82,7 @@ import org.geysermc.connector.network.translators.chat.MessageTranslator;
 import org.geysermc.connector.network.translators.collision.CollisionManager;
 import org.geysermc.connector.network.translators.inventory.EnchantmentInventoryTranslator;
 import org.geysermc.connector.network.translators.item.ItemRegistry;
-import org.geysermc.connector.skin.SkinManager;
+import org.geysermc.connector.network.translators.playerlist.PlayerListManager;
 import org.geysermc.connector.utils.*;
 import org.geysermc.floodgate.util.BedrockData;
 import org.geysermc.floodgate.util.EncryptionUtil;
@@ -110,7 +110,7 @@ public class GeyserSession implements CommandSender {
     private BedrockClientData clientData;
 
     private final SessionPlayerEntity playerEntity;
-    private PlayerInventory inventory;
+    private final PlayerInventory inventory;
 
     private ChunkCache chunkCache;
     private EntityCache entityCache;
@@ -124,6 +124,11 @@ public class GeyserSession implements CommandSender {
      * Stores session collision
      */
     private final CollisionManager collisionManager;
+
+    /**
+     * Stores and managers playerlist state
+     */
+    private final PlayerListManager playerListManager;
 
     private final Map<Vector3i, SkullPlayerEntity> skullCache = new ConcurrentHashMap<>();
     private final Long2ObjectMap<ClientboundMapItemDataPacket> storedMaps = Long2ObjectMaps.synchronize(new Long2ObjectOpenHashMap<>());
@@ -343,6 +348,7 @@ public class GeyserSession implements CommandSender {
         this.windowCache = new WindowCache(this);
 
         this.collisionManager = new CollisionManager(this);
+        this.playerListManager = new PlayerListManager(this);
 
         this.playerEntity = new SessionPlayerEntity(this);
         this.inventory = new PlayerInventory();
@@ -417,17 +423,21 @@ public class GeyserSession implements CommandSender {
             }
             authenticate(authData.getName());
         }
+
+        // notify managers that upstream is initialized
+        playerListManager.login();
+
     }
 
-    public boolean isOnline() {
+    public boolean isOnlineAuth() {
         return connector.getAuthType() == AuthType.ONLINE;
     }
 
-    public boolean isOffline() {
+    public boolean isOfflineAuth() {
         return connector.getAuthType() == AuthType.OFFLINE;
     }
 
-    public boolean isFloodgate() {
+    public boolean isFloodgateAuth() {
         return connector.getAuthType() == AuthType.FLOODGATE || playerEntity.getUuid().getMostSignificantBits() == 0;
     }
 
@@ -566,8 +576,8 @@ public class GeyserSession implements CommandSender {
                                 playerEntity.setUuid(profile.getId());
 
                                 // Check if they are not using a linked account
-                                if (isOffline() || isFloodgate()) {
-                                    SkinManager.registerBedrockSkin(playerEntity, GeyserSession.this);
+                                if (!isOnlineAuth()) {
+                                    playerListManager.registerPlayer(playerEntity);
                                 }
                             }
 
